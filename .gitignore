@@ -1,5 +1,7 @@
 bin/
 obj/
+idea/
+NGM_Server/Secrets/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/

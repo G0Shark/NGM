@@ -8,4 +8,14 @@
         <PublishAot>true</PublishAot>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Repos\" />
+      <Folder Include="Secrets\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0-rc.2.24474.1" />
+      <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.5" />
+    </ItemGroup>
+
 </Project>

@@ -1,0 +1,8 @@
+NGM_Client/bin
+NGM_Client/obj
+NGM_Client/Properties
+NGM_Client/App.config
+NGM_Client/ClientConfig.json
+packages
+.vs
+NGM_Client.sln

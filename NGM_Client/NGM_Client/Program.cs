@@ -14,17 +14,18 @@ namespace NGM_Client
 
     class Program
     {
+        
         static async Task Main(string[] args)
         {
-            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddJsonFile("C:/Oleg/git/NGM/NGM_Client/NGM_Client/ClientConfig.json");
-            IConfiguration configuration = configurationBuilder.Build();
-            string connectionString = configuration.GetConnectionString("AppPath");
-            Console.WriteLine(connectionString);
+            Client client = new Client();
 
-            Client client=new Client();
-            string res = await client.Ping(connectionString);
-            Console.WriteLine(res) ;
+
+            string res = await client.SendRequest(HttpMethod.Put,  "test/put", new List<string> { "TestName", "test_name"});
+            Console.WriteLine("put: "+res);
+            res = await client.SendRequest(HttpMethod.Post, "test/post", null, new List<string> { "\"Name\"", "\"test_name\"", "\"Value\"","123" });
+            Console.WriteLine("post: " + res);
+            res = await client.SendRequest(HttpMethod.Post, "test/db", null,null, new List<string> { "name","test_acc", "password","123","description","qq" });
+            Console.WriteLine("test_post: " + res);
             Console.ReadLine();
         }
     }

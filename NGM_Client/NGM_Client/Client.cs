@@ -68,7 +68,6 @@ namespace NGM_Client
         public async Task<string> SendRequest(HttpMethod method, string path, List<string> headers = null, List<string> contentValues = null, List<string> paramsValues = null, string mediaType= "application/json")
         {
             AddParamsValuesToPath(ref path, ref paramsValues);
-            Console.WriteLine(path);
             HttpRequestMessage request = new HttpRequestMessage(method, basePath + path);
             AddHeadersToRequest(ref request, ref headers);
 

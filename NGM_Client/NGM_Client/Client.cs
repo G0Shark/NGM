@@ -2,20 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Specialized;
+using System.IO;
+using System.Net.Http.Headers;
 
 namespace NGM_Client
 {
     class Client
     {
+        WebClient webClient;
         HttpClient httpClient;
         IConfiguration configurationJs;
         string basePath;
         public Client()
         {
+            webClient = new WebClient();
             httpClient = new HttpClient();
             configurationJs = InitConfiguration();
             basePath = configurationJs.GetValue<string>("AppPath");
@@ -27,16 +33,22 @@ namespace NGM_Client
             configurationBuilder.AddJsonFile("C:/Oleg/git/NGM/NGM_Client/NGM_Client/ClientConfig.json");
             return configurationBuilder.Build();
         }
-
-        void AddValuesToPath(ref string path, ref List<string> values)
+        string CreateStringContent(ref List<string> values)
         {
-            if(values!=null)
-            for (int i = 0; i < values.Count; i+=2) path += (i == 0) ? "?" : "&" + values[i] + "=" + values[i+1];
+            string content = "{";
+            for (int i = 0; i < values.Count; i += 2) content += (i == 0 ? "" : ",") + values[i] + " : " + values[i + 1];
+            content += "}";
+            return content;
         }
         void AddHeadersToRequest(ref HttpRequestMessage request, ref List<string> headers)
         {
             if (headers != null)
-                for (int i = 0; i < headers.Count; i += 2) request.Headers.Add(headers[i], headers[i+1]);
+                for (int i = 0; i < headers.Count; i += 2) request.Headers.Add(headers[i], headers[i + 1]);
+        }
+        void AddParamsValuesToPath(ref string path, ref List<string> values)
+        {
+            if (values != null)
+                for (int i = 0; i < values.Count; i += 2) path += (i == 0) ? "?" : "&" + values[i] + "=" + values[i + 1];
         }
 
         public IConfiguration GetJsConfiguration()
@@ -44,47 +56,35 @@ namespace NGM_Client
             return configurationJs;
         }
 
-        public async Task<string> Get(string path, List<string> headers = null, List<string> values = null)
+        public void SetDefaultRequestHeaders(List<string> headers)
         {
-            AddValuesToPath(ref path, ref values);
-             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, basePath+path);
-            AddHeadersToRequest(ref request, ref headers);
-             HttpResponseMessage response = await httpClient.SendAsync(request);
-            string res = await response.Content.ReadAsStringAsync();
-            return res;
-
+            if (headers != null)
+                for (int i = 0; i < headers.Count; i += 2) httpClient.DefaultRequestHeaders.Add(headers[i], headers[i + 1]);
         }
-
-        public async Task<string> Put(string path, List<string> headers=null, List<string> values = null)
+        public void SetAuthorizationHeader(string scheme, string parameter)
         {
-            AddValuesToPath(ref path, ref values);
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, basePath + path);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, parameter);
+        }
+        public async Task<string> SendRequest(HttpMethod method, string path, List<string> headers = null, List<string> contentValues = null, List<string> paramsValues = null, string mediaType= "application/json")
+        {
+            AddParamsValuesToPath(ref path, ref paramsValues);
+            HttpRequestMessage request = new HttpRequestMessage(method, basePath + path);
             AddHeadersToRequest(ref request, ref headers);
+
+
+            if (contentValues != null)
+            request.Content = new StringContent(
+            CreateStringContent(ref contentValues),
+            Encoding.UTF8,
+            mediaType
+            );
+
             HttpResponseMessage response = await httpClient.SendAsync(request);
             string res = await response.Content.ReadAsStringAsync();
             return res;
 
         }
 
-        public async Task<string> Post(string path, List<string> headers = null, List<string> values = null)
-        {
-            AddValuesToPath(ref path, ref values);
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, basePath + path);
-            AddHeadersToRequest(ref request, ref headers);
-            HttpResponseMessage response = await httpClient.SendAsync(request);
-            string res = await response.Content.ReadAsStringAsync();
-            return res;
-
-        }
-        public async Task<string> Delete(string path, List<string> headers = null, List<string> values = null)
-        {
-            AddValuesToPath(ref path, ref values);
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, basePath + path);
-            AddHeadersToRequest(ref request, ref headers);
-            HttpResponseMessage response = await httpClient.SendAsync(request);
-            string res = await response.Content.ReadAsStringAsync();
-            return res;
-
-        }
     }
+    //httpClient.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("","");
 }

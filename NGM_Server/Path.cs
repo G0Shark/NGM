@@ -1,5 +1,6 @@
 ﻿namespace NGM_Server;
 
+//todo: начать этим пользоваться, полезно как никак)
 public static class Path
 {
     public static string MainAPIPath = "api"; // Важная хрень, стоит в начале всех запросов. Вотвот

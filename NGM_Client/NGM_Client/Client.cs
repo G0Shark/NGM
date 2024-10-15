@@ -28,15 +28,15 @@ namespace NGM_Client
             return configurationBuilder.Build();
         }
 
-        void AddValuesToPath(ref string path, ref List<List<string>> values)
+        void AddValuesToPath(ref string path, ref List<string> values)
         {
             if(values!=null)
-            for (int i = 0; i < values.Count; i++) path += (i == 0) ? "?" : "&" + values[i][0] + "=" + values[i][1];
+            for (int i = 0; i < values.Count; i+=2) path += (i == 0) ? "?" : "&" + values[i] + "=" + values[i+1];
         }
-        void AddHeadersToRequest(ref HttpRequestMessage request, ref List<List<string>> headers)
+        void AddHeadersToRequest(ref HttpRequestMessage request, ref List<string> headers)
         {
             if (headers != null)
-                foreach (List<string> header in headers) request.Headers.Add(header[0], header[1]);
+                for (int i = 0; i < headers.Count; i += 2) request.Headers.Add(headers[i], headers[i+1]);
         }
 
         public IConfiguration GetJsConfiguration()
@@ -44,7 +44,7 @@ namespace NGM_Client
             return configurationJs;
         }
 
-        public async Task<string> Get(string path, List<List<string>> headers = null, List<List<string>> values = null)
+        public async Task<string> Get(string path, List<string> headers = null, List<string> values = null)
         {
             AddValuesToPath(ref path, ref values);
              HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, basePath+path);
@@ -55,7 +55,7 @@ namespace NGM_Client
 
         }
 
-        public async Task<string> Put(string path, List<List<string>> headers=null, List<List<string>> values = null)
+        public async Task<string> Put(string path, List<string> headers=null, List<string> values = null)
         {
             AddValuesToPath(ref path, ref values);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, basePath + path);
@@ -66,7 +66,7 @@ namespace NGM_Client
 
         }
 
-        public async Task<string> Post(string path, List<List<string>> headers = null, List<List<string>> values = null)
+        public async Task<string> Post(string path, List<string> headers = null, List<string> values = null)
         {
             AddValuesToPath(ref path, ref values);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, basePath + path);
@@ -76,7 +76,7 @@ namespace NGM_Client
             return res;
 
         }
-        public async Task<string> Delete(string path, List<List<string>> headers = null, List<List<string>> values = null)
+        public async Task<string> Delete(string path, List<string> headers = null, List<string> values = null)
         {
             AddValuesToPath(ref path, ref values);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, basePath + path);

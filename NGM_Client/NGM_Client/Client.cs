@@ -15,13 +15,11 @@ namespace NGM_Client
 {
     class Client
     {
-        WebClient webClient;
         HttpClient httpClient;
         IConfiguration configurationJs;
         string basePath;
         public Client()
         {
-            webClient = new WebClient();
             httpClient = new HttpClient();
             configurationJs = InitConfiguration();
             basePath = configurationJs.GetValue<string>("AppPath");
@@ -31,6 +29,7 @@ namespace NGM_Client
         {
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddJsonFile("C:/Oleg/git/NGM/NGM_Client/NGM_Client/ClientConfig.json");
+            
             return configurationBuilder.Build();
         }
         string CreateStringContent(ref List<string> values)

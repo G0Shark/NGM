@@ -48,7 +48,7 @@ namespace NGM_Client
         void AddParamsValuesToPath(ref string path, ref List<string> values)
         {
             if (values != null)
-                for (int i = 0; i < values.Count; i += 2) path += (i == 0) ? "?" : "&" + values[i] + "=" + values[i + 1];
+                for (int i = 0; i < values.Count; i += 2) path += (i == 0 ? "?" : "&") + values[i] + "=" + values[i + 1];
         }
 
         public IConfiguration GetJsConfiguration()
@@ -68,6 +68,7 @@ namespace NGM_Client
         public async Task<string> SendRequest(HttpMethod method, string path, List<string> headers = null, List<string> contentValues = null, List<string> paramsValues = null, string mediaType= "application/json")
         {
             AddParamsValuesToPath(ref path, ref paramsValues);
+            Console.WriteLine(path);
             HttpRequestMessage request = new HttpRequestMessage(method, basePath + path);
             AddHeadersToRequest(ref request, ref headers);
 

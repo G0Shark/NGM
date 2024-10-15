@@ -21,16 +21,16 @@ namespace NGM_Client
         public Client()
         {
             httpClient = new HttpClient();
-            configurationJs = InitConfiguration();
+            InitConfiguration("C:/Oleg/git/NGM/NGM_Client/NGM_Client/ClientConfig.json");
             basePath = configurationJs.GetValue<string>("AppPath");
         }
 
-        IConfiguration InitConfiguration()
+        void InitConfiguration(string path)
         {
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddJsonFile("C:/Oleg/git/NGM/NGM_Client/NGM_Client/ClientConfig.json");
-            
-            return configurationBuilder.Build();
+            configurationBuilder.AddJsonFile(path);
+
+            configurationJs= configurationBuilder.Build();
         }
         string CreateStringContent(ref List<string> values)
         {

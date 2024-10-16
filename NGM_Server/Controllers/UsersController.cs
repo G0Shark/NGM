@@ -10,14 +10,18 @@ public class UsersController : Controller
     [HttpGet("post")]
     public IActionResult GetUser(string username, string password)
     {
+        MySqlConnection c = new MySqlConnection(NGM_Server.Conf.DBConnection);
+        c.Open();
         //todo: доделать функцию (завтра)
-        string sql = "SELECT id, name FROM men WHERE age = 22";
-        MySqlCommand command = new MySqlCommand(sql, NGM_Server.DBConnection.connection);
+        MySqlCommand command = new MySqlCommand($"SELECT * FROM `users` WHERE `name` = '{username}' AND `password` = '{password}'", c);
         MySqlDataReader reader = command.ExecuteReader();
         while (reader.Read())
         {
-            Console.WriteLine(reader[0].ToString() + " " + reader[1].ToString());
+            Console.WriteLine(reader[2].ToString() + " " + reader[3].ToString());
         }
         reader.Close();
+        c.Close();
+
+        return BadRequest();
     }
 }

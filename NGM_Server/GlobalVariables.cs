@@ -3,7 +3,7 @@
 namespace NGM_Server;
 
 //todo: переработать, соединени создавать на постояннке
-public static class DBConnection
+public static class Conf
 {
-    public static MySqlConnection connection { get; set; }
+    public static string DBConnection { get; set; }
 }

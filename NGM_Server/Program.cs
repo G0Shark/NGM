@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
 using MySql.EntityFrameworkCore.Extensions;
 
-//todo: почистить всё это, тут моного лишнего и непонятного
+//todo: почистить всё это, тут моного лишнего
 
 var builder = WebApplication.CreateSlimBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -13,30 +13,20 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 var app = builder.Build();
 
-app.MapGet(NGM_Server.Path.MainAPIPath + NGM_Server.Path.Test, () =>
-{
-    return "Pong! QQ, мой друг";
-});
-
-app.MapPost(NGM_Server.Path.MainAPIPath + NGM_Server.Path.Test, (string returned) =>
-{
-    return "Pong! Ты написал " + returned;
-});
-
 app.UseAuthorization();
 app.MapControllers();
 
-NGM_Server.DBConnection.connection = new MySqlConnection(new ConfigurationBuilder().AddJsonFile("Secrets/settings.json").Build().GetConnectionString("DefaultConnection"));
+var b = new ConfigurationBuilder().AddJsonFile("Secrets/settings.json").Build();
+
+NGM_Server.Conf.DBConnection = b.GetConnectionString("DefaultConnection");
+MySqlConnection connection = new MySqlConnection(NGM_Server.Conf.DBConnection);
 
 try
 {
-    NGM_Server.DBConnection.connection.Open();
+    connection.Open();
     Console.WriteLine("SQL Connection success!");
-    
+    connection.Close();
     app.Run();
-    
-    
-    
 }
 catch (Exception ex)
 {
@@ -44,5 +34,5 @@ catch (Exception ex)
 }
 finally
 {
-    NGM_Server.DBConnection.connection.Close();
+    connection.Close();
 }

@@ -8,4 +8,6 @@ using NGM_Server.Controllers;
 [JsonSerializable(typeof(ValidationProblemDetails))]
 [JsonSerializable(typeof(Test))] // Add your Test class here
 [JsonSerializable(typeof(List<Test>))] // If you are using lists of Test
+[JsonSerializable(typeof(UserForm))] // Add your Test class here
+[JsonSerializable(typeof(List<UserForm>))] // If you are using lists of Test
 internal partial class MyJsonContext : JsonSerializerContext { }

@@ -1,0 +1,6 @@
+@NGM_Server_rebuild_HostAddress = http://localhost:5012
+
+GET {{NGM_Server_rebuild_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGM_Server", "NGM_Server\NGM_Server.csproj", "{F258E7AC-AF6C-4702-8990-713B515EE910}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGM_Server_rebuild", "NGM_Server_rebuild\NGM_Server_rebuild.csproj", "{82EBEE3E-FCCA-4147-9FCE-A64B7E608527}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F258E7AC-AF6C-4702-8990-713B515EE910}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F258E7AC-AF6C-4702-8990-713B515EE910}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F258E7AC-AF6C-4702-8990-713B515EE910}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F258E7AC-AF6C-4702-8990-713B515EE910}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82EBEE3E-FCCA-4147-9FCE-A64B7E608527}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82EBEE3E-FCCA-4147-9FCE-A64B7E608527}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82EBEE3E-FCCA-4147-9FCE-A64B7E608527}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82EBEE3E-FCCA-4147-9FCE-A64B7E608527}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

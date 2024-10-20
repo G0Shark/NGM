@@ -10,18 +10,25 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Specialized;
 using System.IO;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace NGM_Client
 {
     class Client
     {
+        HubConnection hubConnectionText, hubConnectionVoice;
+
         HttpClient httpClient;
         IConfiguration configurationJs;
         string basePath;
-        public Client()
+
+        string channelId="-1";
+        string userId = "-1";
+        public Client(string _userId)
         {
+            userId = _userId;
             httpClient = new HttpClient();
-            InitConfiguration("C:/Oleg/git/NGM/NGM_Client/NGM_Client/ClientConfig.json");
+            InitConfiguration("ClientConfig.json");
             basePath = configurationJs.GetValue<string>("AppPath");
         }
 
@@ -83,6 +90,49 @@ namespace NGM_Client
             return res;
 
         }
+
+
+
+        public async Task ConnectToTextChat(string _channelId)
+        {
+            channelId = _channelId;
+            hubConnectionText = new HubConnectionBuilder()
+                .WithUrl(basePath+"hub")
+                .Build();
+
+
+
+            hubConnectionText.On<string, string>("ReceiveMessage", (athor, message) =>
+            {
+                if(userId!= athor)//условно
+                Console.WriteLine(athor + ": " + message);
+            });
+
+            await hubConnectionText.StartAsync();
+            await hubConnectionText.InvokeAsync("connect", channelId, userId);
+        }
+
+
+        public async Task LeaveTextChat()
+        {
+            await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
+            await hubConnectionText.StopAsync();
+            channelId = "-1";
+        }
+
+
+        public async Task SendToTextChat(string content)
+        {
+            if (channelId == "-1") return;
+            await hubConnectionText.InvokeAsync("SendToTextChat", channelId, userId, content);
+        }
+        
+        public async Task SendToVoiceChat()
+        {
+            await hubConnectionVoice.InvokeAsync("SendToVoiceChat");
+        }
+
+
 
     }
     //httpClient.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("","");

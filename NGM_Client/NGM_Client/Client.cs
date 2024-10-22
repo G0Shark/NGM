@@ -12,6 +12,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR.Client;
 
+
 namespace NGM_Client
 {
     class Client
@@ -22,8 +23,10 @@ namespace NGM_Client
         IConfiguration configurationJs;
         string basePath;
 
-        string channelId="-1";
+        List<string> channelsId;
         string userId = "-1";
+
+
         public Client(string _userId)
         {
             userId = _userId;
@@ -93,11 +96,11 @@ namespace NGM_Client
 
 
 
-        public async Task ConnectToTextChat(string _channelId)
+        public async Task ConnectToTextChat(List<string> _channelsId)
         {
-            channelId = _channelId;
+            channelsId = _channelsId;
             hubConnectionText = new HubConnectionBuilder()
-                .WithUrl(basePath+"hub")
+                .WithUrl(basePath+"hub/chat")
                 .Build();
 
 
@@ -109,24 +112,66 @@ namespace NGM_Client
             });
 
             await hubConnectionText.StartAsync();
-            await hubConnectionText.InvokeAsync("connect", channelId, userId);
+            foreach (string channelId in channelsId)
+                await ConnectToChannel(channelId);
         }
 
 
         public async Task LeaveTextChat()
         {
-            await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
+            foreach(string channelId in channelsId)
+                await DisconnectToChannel(channelId);
             await hubConnectionText.StopAsync();
-            channelId = "-1";
+            channelsId = new List<string>();
+        }
+
+        public async Task ConnectToChannel(string channelId)
+        {
+            await hubConnectionText.InvokeAsync("connect", channelId, userId);
+        }
+        public async Task DisconnectToChannel(string channelId)
+        {
+            await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
         }
 
 
-        public async Task SendToTextChat(string content)
+        public async Task SendToTextChat(string channelId, string content)
         {
             if (channelId == "-1") return;
             await hubConnectionText.InvokeAsync("SendToTextChat", channelId, userId, content);
         }
-        
+
+
+
+
+        public async Task ConnectToVoiceChat(List<string> _channelsId)
+        {
+            channelsId = _channelsId;
+            hubConnectionVoice = new HubConnectionBuilder()
+                .WithUrl(basePath + "hub/voice")
+                .Build();
+
+
+
+            hubConnectionVoice.On<string, string>("ReceiveVoice", (athor, message) =>
+            {
+                if (userId != athor)//условно
+                    Console.WriteLine(athor + ": " + message);
+            });
+
+            await hubConnectionVoice.StartAsync();
+            foreach (string channelId in channelsId)
+                await ConnectToChannel(channelId);
+        }
+
+
+        public async Task LeaveVoiceChat()
+        {
+            foreach (string channelId in channelsId)
+                await DisconnectToChannel(channelId);
+            await hubConnectionVoice.StopAsync();
+            channelsId = new List<string>();
+        }
         public async Task SendToVoiceChat()
         {
             await hubConnectionVoice.InvokeAsync("SendToVoiceChat");

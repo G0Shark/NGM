@@ -17,6 +17,8 @@ namespace NGM_Client
 {
     class Client
     {
+        AudioController ac;
+
         HubConnection hubConnectionText, hubConnectionVoice;
 
         HttpClient httpClient;
@@ -27,12 +29,13 @@ namespace NGM_Client
         string userId = "-1";
 
 
-        public Client(string _userId)
+        public Client(string _userId, int _deviceNumber)
         {
             userId = _userId;
             httpClient = new HttpClient();
             InitConfiguration("ClientConfig.json");
             basePath = configurationJs.GetValue<string>("AppPath");
+            ac = new AudioController(_deviceNumber);
         }
 
         void InitConfiguration(string path)
@@ -63,6 +66,11 @@ namespace NGM_Client
         public IConfiguration GetJsConfiguration()
         {
             return configurationJs;
+        }
+
+        public AudioController GetAudioController()
+        {
+            return ac;
         }
 
         public void SetDefaultRequestHeaders(List<string> headers)
@@ -113,26 +121,18 @@ namespace NGM_Client
 
             await hubConnectionText.StartAsync();
             foreach (string channelId in channelsId)
-                await ConnectToChannel(channelId);
+                await hubConnectionText.InvokeAsync("connect", channelId, userId);
         }
 
 
         public async Task LeaveTextChat()
         {
             foreach(string channelId in channelsId)
-                await DisconnectToChannel(channelId);
+                await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
             await hubConnectionText.StopAsync();
             channelsId = new List<string>();
         }
 
-        public async Task ConnectToChannel(string channelId)
-        {
-            await hubConnectionText.InvokeAsync("connect", channelId, userId);
-        }
-        public async Task DisconnectToChannel(string channelId)
-        {
-            await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
-        }
 
 
         public async Task SendToTextChat(string channelId, string content)
@@ -153,28 +153,33 @@ namespace NGM_Client
 
 
 
-            hubConnectionVoice.On<string, string>("ReceiveVoice", (athor, message) =>
+            hubConnectionVoice.On<string, string>("ReceiveVoice", (_userId, data) =>
             {
-                if (userId != athor)//условно
-                    Console.WriteLine(athor + ": " + message);
+                if (userId != _userId)//условно
+                    ac.PlayAudio(Convert.FromBase64String(data).ToArray(), 32000);
             });
 
             await hubConnectionVoice.StartAsync();
             foreach (string channelId in channelsId)
-                await ConnectToChannel(channelId);
+                await hubConnectionVoice.InvokeAsync("connect", channelId, userId);
         }
 
 
         public async Task LeaveVoiceChat()
         {
             foreach (string channelId in channelsId)
-                await DisconnectToChannel(channelId);
+                await hubConnectionVoice.InvokeAsync("disconnect", channelId, userId);
             await hubConnectionVoice.StopAsync();
             channelsId = new List<string>();
         }
-        public async Task SendToVoiceChat()
+        public async Task SendToVoiceChat(string channelId)
         {
-            await hubConnectionVoice.InvokeAsync("SendToVoiceChat");
+            ac.StartRecording();
+            System.Threading.Thread.Sleep(10);
+            ac.StopRecording();
+            //PlayAudio(audioStream.ToArray(), 32000);
+
+            await hubConnectionVoice.InvokeAsync("SendToVoiceChat", channelId, userId, Convert.ToBase64String(ac.GetAudioStream().ToArray()));
         }
 
 

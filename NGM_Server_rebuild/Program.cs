@@ -7,7 +7,7 @@ using NGM_Server_rebuild.Hubs;
 using ZstdSharp.Unsafe;
 
 //Проверка на коннект, чтобы я не подключился к несуществующей дб
-/*try
+try
 {
     var c = new MySqlConnection(gb.dbconn);
     c.Open();
@@ -16,12 +16,10 @@ using ZstdSharp.Unsafe;
 catch (Exception ex)
 {
     Console.WriteLine(ex.Message);
-}*/
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
@@ -29,7 +27,6 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -44,5 +41,8 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
  
 app.UseRouting();
-app.MapHub<ChatHub>("/api/hub");
+
+//Маппинг SignalR хабов
+app.MapHub<ChatHub>("/api/hub/chat");
+app.MapHub<VoiceHub>("/api/hub/voice");
 app.Run();

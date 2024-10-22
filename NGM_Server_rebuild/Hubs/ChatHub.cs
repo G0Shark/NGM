@@ -7,7 +7,7 @@ public class ChatHub : Hub
 {
     public async Task SendToTextChat(string id, string senderid, string message)
     {
-        Console.WriteLine($"Sending message to {senderid}: {message}; id: {id}");
+        Console.WriteLine($"Sending message from {senderid}: {message}; id: {id}");
         await Clients.Group(id).SendAsync("ReceiveMessage", senderid, message);
     }
     

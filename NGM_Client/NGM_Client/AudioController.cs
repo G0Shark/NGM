@@ -10,13 +10,15 @@ namespace NGM_Client
     class AudioController
     {
 
-         private WaveInEvent waveSource;
-         private MemoryStream audioStream;
-        int deviceNumber = 0;
+        private WaveInEvent waveSource;
+        private MemoryStream audioStream;
+        int micNumber = 0;
+        int delay;
 
-        public AudioController(int _deviceNumber)
+        public AudioController(int _micNumber, int _delay)
         {
-            deviceNumber = _deviceNumber;
+            micNumber = _micNumber;
+            delay = _delay;
         }
 
         public MemoryStream GetAudioStream()
@@ -61,7 +63,7 @@ namespace NGM_Client
                         // Wait for playback to finish
                         while (waveOut.PlaybackState == PlaybackState.Playing)
                         {
-                            System.Threading.Thread.Sleep(100);
+                            System.Threading.Thread.Sleep(delay);
                         }
                     }
                 }

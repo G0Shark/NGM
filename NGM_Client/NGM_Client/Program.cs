@@ -19,7 +19,7 @@ namespace NGM_Client
     class Program
     {
 
-
+        static int delay = 100;
         static async Task Main(string[] args)
         {
             int waveInDevices = WaveIn.DeviceCount;
@@ -36,9 +36,9 @@ namespace NGM_Client
             Console.WriteLine("chatId: ");
             string chatId = Console.ReadLine();
             Console.WriteLine("micNum: ");
-            int deviceNumber = Convert.ToInt32(Console.ReadLine());
+            int micNumber = Convert.ToInt32(Console.ReadLine());
 
-            Client client = new Client(userId, deviceNumber);
+            Client client = new Client(micNumber, delay, userId);
 
 
             /*string res = await client.SendRequest(HttpMethod.Put,  "test/put", new List<string> { "TestName", "test_name"});

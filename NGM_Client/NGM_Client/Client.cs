@@ -28,14 +28,17 @@ namespace NGM_Client
         List<string> channelsId;
         string userId = "-1";
 
+        int delay;
 
-        public Client(string _userId, int _deviceNumber)
+
+        public Client(int _micNumber, int _delay, string _userId)
         {
             userId = _userId;
             httpClient = new HttpClient();
             InitConfiguration("ClientConfig.json");
             basePath = configurationJs.GetValue<string>("AppPath");
-            ac = new AudioController(_deviceNumber);
+            delay = _delay;
+            ac = new AudioController(_micNumber, delay);
         }
 
         void InitConfiguration(string path)
@@ -175,7 +178,7 @@ namespace NGM_Client
         public async Task SendToVoiceChat(string channelId)
         {
             ac.StartRecording();
-            System.Threading.Thread.Sleep(10);
+            System.Threading.Thread.Sleep(delay);
             ac.StopRecording();
             //PlayAudio(audioStream.ToArray(), 32000);
 

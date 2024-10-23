@@ -30,10 +30,9 @@ namespace NGM_Client
          string userId = "-1";
 
 
-        //int membersCountInVoice = 0;
-         BufferedWaveProvider audioBufferStream;
+         Dictionary< string, BufferedWaveProvider> audioBufferStreams;
          WaveInEvent micInput;
-         WaveOut netAudioOutput;
+        Dictionary<string, WaveOut> netAudioOutputs;
 
         public Client(int _micNumber, string _userId)
         {
@@ -44,15 +43,19 @@ namespace NGM_Client
 
             micInput = new WaveInEvent();
             micInput.DeviceNumber = _micNumber;
-            micInput.WaveFormat = new WaveFormat(8000, 16, 1);//16000, 32, 1
+            micInput.WaveFormat = new WaveFormat(16000, 32, 1);//16000, 32, 1
             micInput.DataAvailable += Voice_Input;
             
-            audioBufferStream = new BufferedWaveProvider(micInput.WaveFormat);
-            netAudioOutput = new WaveOut();
-            netAudioOutput.Init(audioBufferStream);
-
-
             
+        }
+
+        void AddVoiceUser(string id)
+        {
+            audioBufferStreams[id] = new BufferedWaveProvider(micInput.WaveFormat);
+            netAudioOutputs[id] = new WaveOut();
+            netAudioOutputs[id].Init(audioBufferStreams[id]);
+
+            netAudioOutputs[id].Play();
         }
 
         void InitConfiguration(string path)
@@ -168,19 +171,22 @@ namespace NGM_Client
 
             hubConnectionVoice.On<string, byte[]>("ReceiveVoice", (_userId, data) =>
             {
-                if (userId != _userId)//условно
+
+                if (userId == _userId) return;
+                if (audioBufferStreams.ContainsKey(_userId))
                     try
                     {
-                        audioBufferStream.AddSamples(data, 0, data.Length);
+                        audioBufferStreams[_userId].AddSamples(data, 0, data.Length);
                     }
                     catch { }
+                else AddVoiceUser(_userId);
 
             });
 
             await hubConnectionVoice.StartAsync();
             await hubConnectionVoice.InvokeAsync("connect", _channelId, userId);
 
-            netAudioOutput.Play();
+            
             micInput.StartRecording();
         }
 
@@ -193,7 +199,12 @@ namespace NGM_Client
             await hubConnectionVoice.StopAsync();
             voiceChannelId = "";
 
-            netAudioOutput.Stop();
+            foreach (KeyValuePair<string, WaveOut> entry in netAudioOutputs)
+            {
+                netAudioOutputs[entry.Key].Stop();
+            }
+            netAudioOutputs = new Dictionary<string, WaveOut>();
+            audioBufferStreams = new Dictionary<string, BufferedWaveProvider>();
             micInput.StopRecording();
         }
 

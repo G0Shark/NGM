@@ -72,7 +72,7 @@ namespace NGM_Client
             await client.ConnectToVoiceChat(chatId);
             Console.ReadLine();
             await client.LeaveVoiceChat();
-                        //*/
+                        
 
             Console.ReadLine();
 

@@ -12,12 +12,12 @@ using System.IO;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR.Client;
 
+using NAudio.Wave;
 
 namespace NGM_Client
 {
     class Client
     {
-        AudioController ac;
 
         HubConnection hubConnectionText, hubConnectionVoice;
 
@@ -25,20 +25,34 @@ namespace NGM_Client
         IConfiguration configurationJs;
         string basePath;
 
-        List<string> channelsId;
-        string userId = "-1";
+         List<string> channelsId;
+         string voiceChannelId;
+         string userId = "-1";
 
-        int delay;
 
+        //int membersCountInVoice = 0;
+         BufferedWaveProvider audioBufferStream;
+         WaveInEvent micInput;
+         WaveOut netAudioOutput;
 
-        public Client(int _micNumber, int _delay, string _userId)
+        public Client(int _micNumber, string _userId)
         {
             userId = _userId;
             httpClient = new HttpClient();
             InitConfiguration("ClientConfig.json");
             basePath = configurationJs.GetValue<string>("AppPath");
-            delay = _delay;
-            ac = new AudioController(_micNumber, delay);
+
+            micInput = new WaveInEvent();
+            micInput.DeviceNumber = _micNumber;
+            micInput.WaveFormat = new WaveFormat(8000, 16, 1);//16000, 32, 1
+            micInput.DataAvailable += Voice_Input;
+            
+            audioBufferStream = new BufferedWaveProvider(micInput.WaveFormat);
+            netAudioOutput = new WaveOut();
+            netAudioOutput.Init(audioBufferStream);
+
+
+            
         }
 
         void InitConfiguration(string path)
@@ -71,10 +85,6 @@ namespace NGM_Client
             return configurationJs;
         }
 
-        public AudioController GetAudioController()
-        {
-            return ac;
-        }
 
         public void SetDefaultRequestHeaders(List<string> headers)
         {
@@ -147,45 +157,53 @@ namespace NGM_Client
 
 
 
-        public async Task ConnectToVoiceChat(List<string> _channelsId)
+        public async Task ConnectToVoiceChat(string _channelId)
         {
-            channelsId = _channelsId;
+            voiceChannelId = _channelId;
             hubConnectionVoice = new HubConnectionBuilder()
                 .WithUrl(basePath + "hub/voice")
                 .Build();
 
 
 
-            hubConnectionVoice.On<string, string>("ReceiveVoice", (_userId, data) =>
+            hubConnectionVoice.On<string, byte[]>("ReceiveVoice", (_userId, data) =>
             {
                 if (userId != _userId)//условно
-                    ac.PlayAudio(Convert.FromBase64String(data).ToArray(), 32000);
+                    try
+                    {
+                        audioBufferStream.AddSamples(data, 0, data.Length);
+                    }
+                    catch { }
+
             });
 
             await hubConnectionVoice.StartAsync();
-            foreach (string channelId in channelsId)
-                await hubConnectionVoice.InvokeAsync("connect", channelId, userId);
+            await hubConnectionVoice.InvokeAsync("connect", _channelId, userId);
+
+            netAudioOutput.Play();
+            micInput.StartRecording();
         }
+
 
 
         public async Task LeaveVoiceChat()
         {
-            foreach (string channelId in channelsId)
-                await hubConnectionVoice.InvokeAsync("disconnect", channelId, userId);
+            
+            await hubConnectionVoice.InvokeAsync("disconnect", voiceChannelId, userId);
             await hubConnectionVoice.StopAsync();
-            channelsId = new List<string>();
+            voiceChannelId = "";
+
+            netAudioOutput.Stop();
+            micInput.StopRecording();
         }
-        public async Task SendToVoiceChat(string channelId)
+
+        private async void Voice_Input(object sender, WaveInEventArgs e)
         {
-            ac.StartRecording();
-            System.Threading.Thread.Sleep(delay);
-            ac.StopRecording();
-            //PlayAudio(audioStream.ToArray(), 32000);
 
-            await hubConnectionVoice.InvokeAsync("SendToVoiceChat", channelId, userId, Convert.ToBase64String(ac.GetAudioStream().ToArray()));
+
+            if(hubConnectionVoice!=null)
+            await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, e.Buffer);
         }
-
-
 
     }
     //httpClient.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("","");

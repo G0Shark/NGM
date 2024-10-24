@@ -10,54 +10,37 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Specialized;
 using System.IO;
 using System.Net.Http.Headers;
-using Microsoft.AspNetCore.SignalR.Client;
 
-using NAudio.Wave;
+
+
 
 namespace NGM_Client
 {
     class Client
     {
 
-        HubConnection hubConnectionText, hubConnectionVoice;
+        
 
         HttpClient httpClient;
         IConfiguration configurationJs;
         string basePath;
 
-         List<string> channelsId;
-         string voiceChannelId;
-         string userId = "-1";
-
-
-         Dictionary< string, BufferedWaveProvider> audioBufferStreams;
-         WaveInEvent micInput;
-        Dictionary<string, WaveOut> netAudioOutputs;
+        SignalRChat srChat;
+        SignalRVoiceChat srVoiceChat;
 
         public Client(int _micNumber, string _userId)
         {
-            userId = _userId;
+
             httpClient = new HttpClient();
             InitConfiguration("ClientConfig.json");
             basePath = configurationJs.GetValue<string>("AppPath");
 
-            micInput = new WaveInEvent();
-            micInput.DeviceNumber = _micNumber;
-            micInput.WaveFormat = new WaveFormat(16000, 32, 1);//16000, 32, 1
-            micInput.DataAvailable += Voice_Input;
-            
-            
+            srChat = new SignalRChat(basePath, _userId);
+            srVoiceChat = new SignalRVoiceChat(basePath,_micNumber,_userId);
         }
 
-        void AddVoiceUser(string id)
-        {
-            audioBufferStreams[id] = new BufferedWaveProvider(micInput.WaveFormat);
-            netAudioOutputs[id] = new WaveOut();
-            netAudioOutputs[id].Init(audioBufferStreams[id]);
-
-            netAudioOutputs[id].Play();
-        }
-
+        
+        //private
         void InitConfiguration(string path)
         {
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -83,12 +66,22 @@ namespace NGM_Client
                 for (int i = 0; i < values.Count; i += 2) path += (i == 0 ? "?" : "&") + values[i] + "=" + values[i + 1];
         }
 
+        //getters
         public IConfiguration GetJsConfiguration()
         {
             return configurationJs;
         }
 
+        public SignalRChat Chat()
+        {
+            return srChat;
+        }
+        public SignalRVoiceChat VoiceChat()
+        {
+            return srVoiceChat;
+        }
 
+        //setters
         public void SetDefaultRequestHeaders(List<string> headers)
         {
             if (headers != null)
@@ -98,6 +91,9 @@ namespace NGM_Client
         {
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, parameter);
         }
+
+        //public
+
         public async Task<string> SendRequest(HttpMethod method, string path, List<string> headers = null, List<string> contentValues = null, List<string> paramsValues = null, string mediaType= "application/json")
         {
             AddParamsValuesToPath(ref path, ref paramsValues);
@@ -119,103 +115,5 @@ namespace NGM_Client
         }
 
 
-
-        public async Task ConnectToTextChat(List<string> _channelsId)
-        {
-            channelsId = _channelsId;
-            hubConnectionText = new HubConnectionBuilder()
-                .WithUrl(basePath+"hub/chat")
-                .Build();
-
-
-
-            hubConnectionText.On<string, string>("ReceiveMessage", (athor, message) =>
-            {
-                if(userId!= athor)//условно
-                Console.WriteLine(athor + ": " + message);
-            });
-
-            await hubConnectionText.StartAsync();
-            foreach (string channelId in channelsId)
-                await hubConnectionText.InvokeAsync("connect", channelId, userId);
-        }
-
-
-        public async Task LeaveTextChat()
-        {
-            foreach(string channelId in channelsId)
-                await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
-            await hubConnectionText.StopAsync();
-            channelsId = new List<string>();
-        }
-
-
-
-        public async Task SendToTextChat(string channelId, string content)
-        {
-            if (channelId == "-1") return;
-            await hubConnectionText.InvokeAsync("SendToTextChat", channelId, userId, content);
-        }
-
-
-
-
-        public async Task ConnectToVoiceChat(string _channelId)
-        {
-            voiceChannelId = _channelId;
-            hubConnectionVoice = new HubConnectionBuilder()
-                .WithUrl(basePath + "hub/voice")
-                .Build();
-
-
-
-            hubConnectionVoice.On<string, byte[]>("ReceiveVoice", (_userId, data) =>
-            {
-
-                if (userId == _userId) return;
-                if (audioBufferStreams.ContainsKey(_userId))
-                    try
-                    {
-                        audioBufferStreams[_userId].AddSamples(data, 0, data.Length);
-                    }
-                    catch { }
-                else AddVoiceUser(_userId);
-
-            });
-
-            await hubConnectionVoice.StartAsync();
-            await hubConnectionVoice.InvokeAsync("connect", _channelId, userId);
-
-            
-            micInput.StartRecording();
-        }
-
-
-
-        public async Task LeaveVoiceChat()
-        {
-            
-            await hubConnectionVoice.InvokeAsync("disconnect", voiceChannelId, userId);
-            await hubConnectionVoice.StopAsync();
-            voiceChannelId = "";
-
-            foreach (KeyValuePair<string, WaveOut> entry in netAudioOutputs)
-            {
-                netAudioOutputs[entry.Key].Stop();
-            }
-            netAudioOutputs = new Dictionary<string, WaveOut>();
-            audioBufferStreams = new Dictionary<string, BufferedWaveProvider>();
-            micInput.StopRecording();
-        }
-
-        private async void Voice_Input(object sender, WaveInEventArgs e)
-        {
-
-
-            if(hubConnectionVoice!=null)
-            await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, e.Buffer);
-        }
-
     }
-    //httpClient.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("","");
 }

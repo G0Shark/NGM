@@ -18,14 +18,7 @@ namespace NGM_Client
 
     class Program
     {
-        static BufferedWaveProvider bufferStream;
-        static WaveInEvent input;
-        //поток для речи собеседника
-        static WaveOut output;
-
         
-        static byte[] _dat = null;
-
         static async Task Main(string[] args)
         {
             int waveInDevices = WaveIn.DeviceCount;
@@ -45,7 +38,6 @@ namespace NGM_Client
             int micNumber = Convert.ToInt32(Console.ReadLine());
 
             Client client = new Client(micNumber, userId);
-
 
             /*string res = await client.SendRequest(HttpMethod.Put,  "test/put", new List<string> { "TestName", "test_name"});
             Console.WriteLine("put: "+res);
@@ -68,10 +60,10 @@ namespace NGM_Client
 
 
 
-            
-            await client.ConnectToVoiceChat(chatId);
+
+            await client.VoiceChat().ConnectToVoiceChat(chatId);
             Console.ReadLine();
-            await client.LeaveVoiceChat();
+            await client.VoiceChat().LeaveVoiceChat();
                         
 
             Console.ReadLine();

@@ -23,23 +23,19 @@ namespace NGM_Client
         string voiceChannelId;
 
 
-        DataCompressor dc;
-
-
         public SignalRVoiceChat(string _basePath, int _micNumber, string _userId)
         {
             basePath = _basePath;
             userId = _userId;
             micInput = new WaveInEvent();
             micInput.DeviceNumber = _micNumber;
-            micInput.WaveFormat = new WaveFormat(48000, 64, 1);//8000, 16, 1
+            micInput.WaveFormat = new WaveFormat(44100, 32, 1);//8000, 16, 1
             micInput.DataAvailable += Voice_Input;
 
             netAudioOutputs = new Dictionary<string, WaveOut>();
             audioBufferStreams = new Dictionary<string, BufferedWaveProvider>();
 
-            dc = new DataCompressor(48000, 64000,1);
-
+            //micInput.StartRecording();
         }
 
         void AddVoiceUser(string id)
@@ -68,7 +64,8 @@ namespace NGM_Client
                 if (audioBufferStreams.ContainsKey(_userId))
                     try
                     {
-                        audioBufferStreams[_userId].AddSamples(dc.Decode(data, data.Length), 0, data.Length);
+                        byte[] decompressedData = DataCompressor.Decompress(data);
+                        audioBufferStreams[_userId].AddSamples(decompressedData, 0, decompressedData.Length);
                     }
                     catch { }
                 else AddVoiceUser(_userId);
@@ -102,9 +99,9 @@ namespace NGM_Client
 
         private async void Voice_Input(object sender, WaveInEventArgs e)
         {
-
+            Console.WriteLine(e.BytesRecorded+" "+DataCompressor.Compress(e.Buffer).Length + " " + DataCompressor.Decompress( DataCompressor.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
-                await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId,  dc.Encode( e.Buffer,e.BytesRecorded));
+                await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, DataCompressor.Compress( e.Buffer));
         }
     }
 }

@@ -29,7 +29,7 @@ namespace NGM_Client
             userId = _userId;
             micInput = new WaveInEvent();
             micInput.DeviceNumber = _micNumber;
-            micInput.WaveFormat = new WaveFormat(44100, 32, 1);//8000, 16, 1
+            micInput.WaveFormat = new WaveFormat(8000, 32, 1);//8000, 16, 1
             micInput.DataAvailable += Voice_Input;
 
             netAudioOutputs = new Dictionary<string, WaveOut>();
@@ -99,9 +99,10 @@ namespace NGM_Client
 
         private async void Voice_Input(object sender, WaveInEventArgs e)
         {
-            //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
+            Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
                 await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, DataWrapper.Compress( e.Buffer));
+
         }
     }
 }

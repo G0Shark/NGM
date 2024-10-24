@@ -7,7 +7,7 @@ using System.IO.Compression;
 using System.IO;
 namespace NGM_Client
 {
-    class DataCompressor
+    class DataWrapper
     {
 
         public static byte[] Compress(byte[] data)

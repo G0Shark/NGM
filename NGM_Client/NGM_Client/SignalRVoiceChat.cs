@@ -64,7 +64,7 @@ namespace NGM_Client
                 if (audioBufferStreams.ContainsKey(_userId))
                     try
                     {
-                        byte[] decompressedData = DataCompressor.Decompress(data);
+                        byte[] decompressedData = DataWrapper.Decompress(data);
                         audioBufferStreams[_userId].AddSamples(decompressedData, 0, decompressedData.Length);
                     }
                     catch { }
@@ -99,9 +99,9 @@ namespace NGM_Client
 
         private async void Voice_Input(object sender, WaveInEventArgs e)
         {
-            Console.WriteLine(e.BytesRecorded+" "+DataCompressor.Compress(e.Buffer).Length + " " + DataCompressor.Decompress( DataCompressor.Compress(e.Buffer)).Length);
+            //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
-                await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, DataCompressor.Compress( e.Buffer));
+                await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, DataWrapper.Compress( e.Buffer));
         }
     }
 }

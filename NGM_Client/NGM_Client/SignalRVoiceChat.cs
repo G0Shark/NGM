@@ -25,8 +25,11 @@ namespace NGM_Client
             userId = _userId;
             micInput = new WaveInEvent();
             micInput.DeviceNumber = _micNumber;
-            micInput.WaveFormat = new WaveFormat(16000, 32, 1);//8000, 16, 1
+            micInput.WaveFormat = new WaveFormat(8000, 16, 1);//8000, 16, 1
             micInput.DataAvailable += Voice_Input;
+
+            netAudioOutputs = new Dictionary<string, WaveOut>();
+            audioBufferStreams = new Dictionary<string, BufferedWaveProvider>();
         }
 
         void AddVoiceUser(string id)
@@ -46,7 +49,6 @@ namespace NGM_Client
             hubConnectionVoice = new HubConnectionBuilder()
                 .WithUrl(basePath + "hub/voice")
                 .Build();
-
 
 
             hubConnectionVoice.On<string, byte[]>("ReceiveVoice", (_userId, data) =>

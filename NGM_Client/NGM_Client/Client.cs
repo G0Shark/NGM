@@ -33,7 +33,7 @@ namespace NGM_Client
 
             httpClient = new HttpClient();
             InitConfiguration("ClientConfig.json");
-            basePath = configurationJs.GetValue<string>("AppPath");
+            basePath = configurationJs.GetSection("AppPath").Value;
 
             srChat = new SignalRChat(basePath, _userId);
             srVoiceChat = new SignalRVoiceChat(basePath,_micNumber,_userId);

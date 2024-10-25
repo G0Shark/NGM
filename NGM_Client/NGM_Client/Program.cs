@@ -21,10 +21,10 @@ namespace NGM_Client
         
         static async Task Main(string[] args)
         {
-            int waveInDevices = WaveIn.DeviceCount;
+            int waveInDevices = WaveInEvent.DeviceCount;
             for (int waveInDevice = 0; waveInDevice < waveInDevices; waveInDevice++)
             {
-                WaveInCapabilities deviceInfo = WaveIn.GetCapabilities(waveInDevice);
+                WaveInCapabilities deviceInfo = WaveInEvent.GetCapabilities(waveInDevice);
                 Console.WriteLine("Device {0}: {1}, {2} channels",
                     waveInDevice, deviceInfo.ProductName, deviceInfo.Channels);
             }

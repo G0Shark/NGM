@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 using NAudio.Wave;
 using System.IO.Compression;
-using Concentus;
-using Concentus.Structs;
 using NAudio.Wave.SampleProviders;
+using System.Reflection.PortableExecutable;
 
 namespace NGM_Client
 {
@@ -25,8 +24,6 @@ namespace NGM_Client
         string voiceChannelId;
 
         DataWrapper dw;
-        OpusEncoder encoder;
-        OpusDecoder decoder;
 
         public SignalRVoiceChat(string _basePath, int _micNumber, string _userId)
         {
@@ -40,7 +37,7 @@ namespace NGM_Client
             netAudioOutputs = new Dictionary<string, WaveOutEvent>();
             audioBufferStreams = new Dictionary<string, BufferedWaveProvider>();
 
-            dw = new DataWrapper(16000, 16000, 320, 1);
+            dw = new DataWrapper(16000, 16000, 3200, 1);
 
             //micInput.StartRecording();
         }
@@ -52,9 +49,15 @@ namespace NGM_Client
 
             var volumeSampleProvider = new VolumeSampleProvider(audioBufferStreams[id].ToSampleProvider());
             volumeSampleProvider.Volume = 2.0f;
+            
             netAudioOutputs[id].Init(volumeSampleProvider);
             netAudioOutputs[id].Volume = 0.5f;
+
+            //using (var resampler = new MediaFoundationResampler(audioBufferStreams[id], new WaveFormat(32000,32, 1)))
+            //    netAudioOutputs[id].Init(resampler);
             netAudioOutputs[id].Play();
+
+            
         }
 
 
@@ -76,13 +79,18 @@ namespace NGM_Client
             hubConnectionVoice.On<string, byte[]>("ReceiveVoice", (_userId, data) =>
             {
 
-                ///if (userId == _userId) return;
+                if (userId == _userId) return;
                 if (audioBufferStreams.ContainsKey(_userId))
                     try
                     {
+                        //Console.WriteLine(audioBufferStreams[_userId].BufferedDuration);
+                        if (audioBufferStreams[_userId].BufferedBytes>=6400)
+                            audioBufferStreams[_userId].ClearBuffer();
                         
+
                         byte[] decompressedData = dw.Decode (data);
                         audioBufferStreams[_userId].AddSamples(decompressedData, 0, decompressedData.Length);
+                        
                     }
                     catch (Exception ex) { Console.WriteLine(ex.Message); }
                 else AddVoiceUser(_userId);
@@ -118,7 +126,7 @@ namespace NGM_Client
         {
 
 
-            Console.WriteLine(e.BytesRecorded);
+            //Console.WriteLine(e.BytesRecorded);
             //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
                 await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, dw.Encode(e.Buffer));//

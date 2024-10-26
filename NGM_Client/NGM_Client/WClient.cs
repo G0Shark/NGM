@@ -13,6 +13,7 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json.Nodes;
+using System.Diagnostics;
 
 
 
@@ -43,7 +44,7 @@ namespace NGM_Client
             basePath = jsonWrapper.GetConfigurationJs().GetSection("AppPath").Value;
 
             srChat = new SignalRChat(basePath, username,password);
-            srVoiceChat = new SignalRVoiceChat(basePath, int.Parse(jsonWrapper.GetConfigurationJs().GetSection("MicrophoneIndex").Value), username, password);
+            srVoiceChat = new SignalRVoiceChat(basePath, int.Parse(jsonWrapper.GetConfigurationJs().GetSection("MicrophoneIndex").Value),bool.Parse( jsonWrapper.GetConfigurationJs().GetSection("PrintPing").Value), username, password);
         }
 
         

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.Json.Nodes;
 
 
@@ -19,8 +20,8 @@ namespace NGM_Client
             Console.WriteLine("Password: ");
             password = DataWrapper.GetHashString(Console.ReadLine());
 
-            WClient client = new WClient(username, password);
-
+            Client client = new Client(username, password);
+            
 
 
 
@@ -37,43 +38,46 @@ namespace NGM_Client
 
 
 
-            Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
+            //Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
 
             string[] com = {""};
             while (com[0]!="exit")
             {
                 com=Console.ReadLine().Split();
-                if (com[0] == "set_volume") { 
-                    client.VoiceChat().SetUserVolume(com[1], float.Parse(com[2], CultureInfo.InvariantCulture) / 2f);
-                    Console.WriteLine(string.Format("volume user {0}, changed to {1}", com[1], com[2]));
-                }
 
-                if(com[0] == "voice_connect")
+                switch(com[0])
                 {
-                    Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
-                }
+                    case "set_volume":
+                        client.GetWClient().VoiceChat().SetUserVolume(com[1], float.Parse(com[2], CultureInfo.InvariantCulture) / 2f);
+                        Console.WriteLine(string.Format("volume user {0}, changed to {1}", com[1], com[2]));
+                        break;
+                    case "voice_connect":
+                        Console.WriteLine(await client.GetWClient().VoiceChat().ConnectToVoiceChat("1"));
+                        break;
+                    case "register":
+                        {
+                            string res;
+                            JsonObject tmp = new JsonObject();
 
-                if (com[0] == "register") 
-                {
-                    string res;
-                    JsonObject tmp=new JsonObject();
-                    
-                    tmp.Add("id","0");
-                    tmp.Add("Username", username);
-                    tmp.Add("PasswordHash", password);
-                    tmp.Add("Email", "@");
-                    tmp.Add("DisplayName", "");
+                            tmp.Add("id", "0");
+                            tmp.Add("Username", username);
+                            tmp.Add("PasswordHash", password);
+                            tmp.Add("Email", "@");
+                            tmp.Add("DisplayName", "");
 
 
-                    res = await client.SendRequest(HttpMethod.Post, "auth/register", tmp, null);//
-                    Console.WriteLine(res);
+                            res = await client.GetWClient().SendRequest(HttpMethod.Post, "auth/register", tmp, null);//
+                            Console.WriteLine(res);
+                        }
+                        break;
+                    case "ping":
+                        Console.WriteLine(await client.GetPing());
+                        break;
                 }
             }
 
-            await client.VoiceChat().LeaveVoiceChat();
+            await client.GetWClient().VoiceChat().LeaveVoiceChat();
                         
-
-            Console.ReadLine();
 
             
 

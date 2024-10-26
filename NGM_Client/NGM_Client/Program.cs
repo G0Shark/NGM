@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration.Json;
 using System.Media;
 using System.Threading;
 using NAudio.Wave;
+using System.Globalization;
 
 namespace NGM_Client
 {
@@ -62,7 +63,14 @@ namespace NGM_Client
 
 
             await client.VoiceChat().ConnectToVoiceChat(chatId);
-            Console.ReadLine();
+
+            string com = "";
+            while (com!="exit")
+            {
+                com=Console.ReadLine();
+                if (com.Split()[0] =="set_vol")client.VoiceChat().SetUserVolume(com.Split()[1], float.Parse(com.Split()[2], CultureInfo.InvariantCulture)/2f);
+            }
+
             await client.VoiceChat().LeaveVoiceChat();
                         
 

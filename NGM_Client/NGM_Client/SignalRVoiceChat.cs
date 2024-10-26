@@ -47,8 +47,6 @@ namespace NGM_Client
         VoiceUser voiceUser;
 
 
-        Stopwatch sw = new Stopwatch();
-        bool printPing = false;
 
         //private
         void AddVoiceUser(string id)
@@ -82,9 +80,8 @@ namespace NGM_Client
         }
 
         //public
-        public SignalRVoiceChat(string _basePath, int _micNumber, bool _printPing, string _username = "username", string _password = "password", string _userId = "-1")
+        public SignalRVoiceChat(string _basePath, int _micNumber, string _username = "username", string _password = "password", string _userId = "-1")
         {
-            printPing = _printPing;
 
             basePath = _basePath;
             userId = _userId;
@@ -125,21 +122,12 @@ namespace NGM_Client
             {
                 Console.WriteLine(message);
             });
+            hubConnectionVoice.On<string, string>("ReceiveMessage", async (username, message) =>
+            {
+                Console.WriteLine(username+": "+message);
+            });
             hubConnectionVoice.On<string, byte[]>("ReceiveVoice", async (_username, data) =>
             {
-                try
-                {
-                    if (printPing)
-                    {
-                        sw.Stop();
-                        Console.Write("\rping: {0}    ", sw.Elapsed.Milliseconds);
-                        //Console.WriteLine("ping: " + sw.Elapsed.Milliseconds);
-                        sw.Reset();
-                        sw.Start();
-                    }
-                }
-                catch (Exception ex) { Console.WriteLine(ex.Message); }
-
                 if (username == _username) return;
                 if (voiceUsers.ContainsKey(_username))
                     try
@@ -165,7 +153,6 @@ namespace NGM_Client
                 Console.WriteLine(channelId+" "+ username+" "+ password);
                 await hubConnectionVoice.StartAsync();
                 await hubConnectionVoice.InvokeAsync("connect", channelId, username, password);
-                if (printPing) sw.Start();
             }
             catch(Exception ex) { Console.WriteLine(ex.Message); return ex.Message; }
 
@@ -177,19 +164,24 @@ namespace NGM_Client
 
         public async Task LeaveVoiceChat()
         {
-            if (channelId == "" || channelId == null) return;
-
-            await hubConnectionVoice.InvokeAsync("disconnect", channelId, username, password);
-            await hubConnectionVoice.StopAsync();
-            channelId = "";
-
-            foreach (KeyValuePair<string, VoiceUser> entry in voiceUsers)
+            try
             {
-                voiceUsers[entry.Key].netAudioOutput.Stop();
-            }
+                if (channelId == "" || channelId == null) return;
 
-            voiceUsers = new Dictionary<string, VoiceUser>();
-            micInput.StopRecording();
+                await hubConnectionVoice.InvokeAsync("disconnect", channelId, username, password);
+                await hubConnectionVoice.StopAsync();
+                channelId = "";
+
+                foreach (KeyValuePair<string, VoiceUser> entry in voiceUsers)
+                {
+                    voiceUsers[entry.Key].netAudioOutput.Stop();
+                }
+
+                voiceUsers = new Dictionary<string, VoiceUser>();
+                micInput.StopRecording();
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+
         }
 
         private async void Voice_Input(object sender, WaveInEventArgs e)

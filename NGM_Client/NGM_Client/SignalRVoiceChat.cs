@@ -37,7 +37,8 @@ namespace NGM_Client
 
         string basePath;
         string userId = "-1";
-        string voiceChannelId;
+        string username, password;
+        string channelId;
 
         DataWrapper dw;
 
@@ -45,12 +46,44 @@ namespace NGM_Client
         VoiceUser voiceUser;
 
 
+        //private
+        void AddVoiceUser(string id)
+        {
+            voiceUsers[id] = new VoiceUser(new BufferedWaveProvider(micInput.WaveFormat), new WaveOutEvent(), new DataWrapper(16000, 16000, 3200, 1));
 
+            voiceUsers[id].netAudioOutput.Init(voiceUsers[id].audioBufferStream);
 
-        public SignalRVoiceChat(string _basePath, int _micNumber, string _userId="-1")
+            var volumeSampleProvider = new VolumeSampleProvider(voiceUsers[id].audioBufferStream.ToSampleProvider());
+            volumeSampleProvider.Volume = 2.0f;
+
+            voiceUsers[id].netAudioOutput.Init(volumeSampleProvider);
+            voiceUsers[id].netAudioOutput.Volume = 0.5f;
+
+            voiceUsers[id].netAudioOutput.Play();
+        }
+        //getters
+
+        //setters
+        public void SetUserId(string _val)
+        {
+            userId = _val;
+        }
+        public void SetUsername(string _val)
+        {
+            username = _val;
+        }
+        public void SetPassword(string _val)
+        {
+            password = _val;
+        }
+
+        //public
+        public SignalRVoiceChat(string _basePath, int _micNumber, string _username = "username", string _password = "password", string _userId = "-1")
         {
             basePath = _basePath;
             userId = _userId;
+            username = _username;
+            password = _password;
             micInput = new WaveInEvent();
             micInput.DeviceNumber = _micNumber;
             micInput.WaveFormat = new WaveFormat(16000, 1);//8000, 16, 1  new WaveFormat(8000, 32, 1);
@@ -63,14 +96,7 @@ namespace NGM_Client
             //micInput.StartRecording();
         }
 
-        void AddVoiceUser(string id)
-        {
-            voiceUsers[id] = new VoiceUser(new BufferedWaveProvider(micInput.WaveFormat), new WaveOutEvent(), new DataWrapper(16000, 16000, 3200, 1));
-
-            voiceUsers[id].netAudioOutput.Init(voiceUsers[id].audioBufferStream);
-
-            voiceUsers[id].netAudioOutput.Play();            
-        }
+        
 
 
         public void SetUserVolume(string uid, float val)
@@ -80,51 +106,65 @@ namespace NGM_Client
         }
 
 
-        public async Task ConnectToVoiceChat(string _channelId)
+        public async Task<string> ConnectToVoiceChat(string _channelId)
         {
-            voiceChannelId = _channelId;
+            if (_channelId == "") return "null channelId";
+            
+            channelId = _channelId;
             hubConnectionVoice = new HubConnectionBuilder()
                 .WithUrl(basePath + "hub/voice")
                 .Build();
 
-
-            hubConnectionVoice.On<string, byte[]>("ReceiveVoice", async (_userId, data) =>
+            hubConnectionVoice.On<string>("ReceiveError", async (message) =>
+            {
+                Console.WriteLine(message);
+            });
+            hubConnectionVoice.On<string, byte[]>("ReceiveVoice", async (_username, data) =>
             {
 
-                if (userId == _userId) return;
-                if (voiceUsers.ContainsKey(_userId))
+                if (username == _username) return;
+                if (voiceUsers.ContainsKey(_username))
                     try
                     {
                         //Console.WriteLine(audioBufferStreams[_userId].BufferedDuration);
-                        if (voiceUsers[_userId].audioBufferStream.BufferedBytes>=6400)
-                            voiceUsers[_userId].audioBufferStream.ClearBuffer();
+                        if (voiceUsers[_username].audioBufferStream.BufferedBytes>=6400)
+                            voiceUsers[_username].audioBufferStream.ClearBuffer();
 
 
-                        byte[] decompressedData = voiceUsers[_userId].dw.Decode(data);// 
-                        voiceUsers[_userId].audioBufferStream.AddSamples(decompressedData, 0, decompressedData.Length);
+                        byte[] decompressedData = voiceUsers[_username].dw.Decode(data);// 
+                        voiceUsers[_username].audioBufferStream.AddSamples(decompressedData, 0, decompressedData.Length);
 
 
                     }
                     catch (Exception ex) { Console.WriteLine(ex.Message); }
-                else { AddVoiceUser(_userId); AddVoiceUser(_userId+"1"); }
+                else { AddVoiceUser(_username); }
 
             });
 
-            await hubConnectionVoice.StartAsync();
-            await hubConnectionVoice.InvokeAsync("connect", _channelId, userId);
 
+
+            try
+            {
+                Console.WriteLine(channelId+" "+ username+" "+ password);
+                await hubConnectionVoice.StartAsync();
+                await hubConnectionVoice.InvokeAsync("connect", channelId, username, password);
+            }
+            catch(Exception ex) { Console.WriteLine(ex.Message); return ex.Message; }
 
             micInput.StartRecording();
+
+            return "connected";
         }
 
 
 
         public async Task LeaveVoiceChat()
         {
+            if (channelId == "") return;
 
-            await hubConnectionVoice.InvokeAsync("disconnect", voiceChannelId, userId);
+            await hubConnectionVoice.InvokeAsync("disconnect", channelId, username, password);
             await hubConnectionVoice.StopAsync();
-            voiceChannelId = "";
+            channelId = "";
 
             foreach (KeyValuePair<string, VoiceUser> entry in voiceUsers)
             {
@@ -142,7 +182,11 @@ namespace NGM_Client
             //Console.WriteLine(e.BytesRecorded);
             //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
-                await hubConnectionVoice.InvokeAsync("SendToVoiceChat", voiceChannelId, userId, dw.Encode(e.Buffer));//dw.Encode(e.Buffer)
+                try
+                { 
+                    await hubConnectionVoice.InvokeAsync("SendToVoiceChat", channelId, username, dw.Encode(e.Buffer));//dw.Encode(e.Buffer)
+                }
+                catch (Exception ex) { Console.WriteLine(ex.Message); }
 
         }
 

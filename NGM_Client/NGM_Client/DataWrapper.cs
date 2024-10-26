@@ -78,12 +78,16 @@ namespace NGM_Client
             using (HashAlgorithm algorithm = SHA256.Create())
                 return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
         }
-        public static string GetHashString(string inputString)
+        public static string GetHashString(string input)
         {
-            StringBuilder sb = new StringBuilder();
-            foreach (byte b in GetHash(inputString))
-                sb.Append(b.ToString("X2"));
-            return sb.ToString();
+            byte[] messageBytes = Encoding.UTF8.GetBytes(input);
+
+
+            byte[] hashValue = SHA256.HashData(messageBytes); 
+            Console.WriteLine(Convert.ToHexString(hashValue));
+
+            return Convert.ToHexString(hashValue);
         }
+
     }
 }

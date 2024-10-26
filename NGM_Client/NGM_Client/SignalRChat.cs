@@ -14,12 +14,34 @@ namespace NGM_Client
         List<string> channelsId;
         string userId = "-1";
         string basePath;
+        string username, password;
+
+        //private
+
+        //getters
+
+        //setters
+        public void SetUserId(string _val)
+        {
+            userId = _val;
+        }
+        public void SetUsername(string _val)
+        {
+            username = _val;
+        }
+        public void SetPassword(string _val)
+        {
+            password = _val;
+        }
 
 
-        public SignalRChat(string _basePath, string _userId = "-1")
+        //public
+        public SignalRChat(string _basePath, string _username = "username", string _password = "password", string _userId = "-1")
         {
             userId = _userId;
             basePath = _basePath;
+            username = _username;
+            password = _password;
         }
 
 

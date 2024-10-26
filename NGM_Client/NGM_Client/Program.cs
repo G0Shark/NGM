@@ -15,9 +15,9 @@ namespace NGM_Client
 
             string username, password;
             Console.WriteLine("Username: ");
-            username = Console.ReadLine();// "1";// Console.ReadLine();
+            username =  Console.ReadLine();
             Console.WriteLine("Password: ");
-            password = DataWrapper.GetHashString(Console.ReadLine()); //DataWrapper.GetHashString("1"); //DataWrapper.GetHashString(Console.ReadLine());
+            password = DataWrapper.GetHashString(Console.ReadLine());
 
             WClient client = new WClient(username, password);
 
@@ -37,7 +37,7 @@ namespace NGM_Client
 
 
 
-            //Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
+            Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
 
             string[] com = {""};
             while (com[0]!="exit")

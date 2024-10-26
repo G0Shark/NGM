@@ -49,7 +49,7 @@ namespace NGM_Client
         //private
         void AddVoiceUser(string id)
         {
-            voiceUsers[id] = new VoiceUser(new BufferedWaveProvider(micInput.WaveFormat), new WaveOutEvent(), new DataWrapper(16000, 16000, 3200, 1));
+            voiceUsers[id] = new VoiceUser(new BufferedWaveProvider(micInput.WaveFormat), new WaveOutEvent(), new DataWrapper(24000, 0, 4800, 1));// 24
 
             voiceUsers[id].netAudioOutput.Init(voiceUsers[id].audioBufferStream);
 
@@ -86,12 +86,12 @@ namespace NGM_Client
             password = _password;
             micInput = new WaveInEvent();
             micInput.DeviceNumber = _micNumber;
-            micInput.WaveFormat = new WaveFormat(16000, 1);//8000, 16, 1  new WaveFormat(8000, 32, 1);
+            micInput.WaveFormat = new WaveFormat(24000, 1);//8000, 16, 1  new WaveFormat(8000, 32, 1);
             micInput.DataAvailable += Voice_Input;
 
             voiceUsers = new Dictionary<string, VoiceUser>();
 
-            dw = new DataWrapper(16000, 16000, 3200, 1);
+            dw = new DataWrapper(24000, 0, 4800, 1);
 
             //micInput.StartRecording();
         }
@@ -126,14 +126,12 @@ namespace NGM_Client
                 if (voiceUsers.ContainsKey(_username))
                     try
                     {
-                        //Console.WriteLine(audioBufferStreams[_userId].BufferedDuration);
-                        if (voiceUsers[_username].audioBufferStream.BufferedBytes>=6400)
+                        if (voiceUsers[_username].audioBufferStream.BufferedBytes >= 6400)
                             voiceUsers[_username].audioBufferStream.ClearBuffer();
 
 
                         byte[] decompressedData = voiceUsers[_username].dw.Decode(data);// 
                         voiceUsers[_username].audioBufferStream.AddSamples(decompressedData, 0, decompressedData.Length);
-
 
                     }
                     catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -157,7 +155,6 @@ namespace NGM_Client
         }
 
 
-
         public async Task LeaveVoiceChat()
         {
             if (channelId == "") return;
@@ -179,7 +176,7 @@ namespace NGM_Client
         {
 
 
-            //Console.WriteLine(e.BytesRecorded);
+            //Console.WriteLine("e: "+e.BytesRecorded);
             //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
                 try

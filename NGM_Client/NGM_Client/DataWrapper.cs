@@ -17,7 +17,7 @@ namespace NGM_Client
 
         int sampleRate;
         int channels;
-        int frameSize=20;
+        int frameSize;
 
         public DataWrapper(int _sampleRate, int _bitrate, int _frameSize, int _channels)
         {
@@ -41,9 +41,13 @@ namespace NGM_Client
 
         public byte[] Decode(byte[] input)
         {
+            //frameSize = 320;
+            //Console.WriteLine(frameSize);
             //Decoder = new OpusDecoder(sampleRate, channels);
-            byte[] decoded = new byte[frameSize]; // Allocate buffer for decoded audio    sampleRate / 1000 * 320 * channels
-            var bytesRead = Decoder.Decode(input, input.Length, decoded, frameSize); // Perform decoding   decoded.Length
+            byte[] decoded = new byte[frameSize]; // Allocate buffer for decoded audio    sampleRate / 1000 * 20 * channels
+            //for(int i=0; i<10;i++)
+
+            Decoder.Decode(input, input.Length, decoded, frameSize); // Perform decoding   decoded.Length
             
             //Console.WriteLine("d: "+decoded.Length);
             return decoded; // Return number of bytes decoded

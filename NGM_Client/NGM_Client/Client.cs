@@ -28,15 +28,15 @@ namespace NGM_Client
         SignalRChat srChat;
         SignalRVoiceChat srVoiceChat;
 
-        public Client(int _micNumber, string _userId)
+        public Client()
         {
 
             httpClient = new HttpClient();
             jsonWrapper=new JsonWrapper("ClientConfig.json");
             basePath = jsonWrapper.GetConfigurationJs().GetSection("AppPath").Value;
 
-            srChat = new SignalRChat(basePath, _userId);
-            srVoiceChat = new SignalRVoiceChat(basePath,_micNumber,_userId);
+            srChat = new SignalRChat(basePath);
+            srVoiceChat = new SignalRVoiceChat(basePath, int.Parse(jsonWrapper.GetConfigurationJs().GetSection("MicrophoneIndex").Value));
         }
 
         
@@ -83,19 +83,19 @@ namespace NGM_Client
 
         //public
 
-        public async Task<string> SendRequest(HttpMethod method, string path, List<string> headers = null, List<string> contentValues = null, List<string> paramsValues = null, string mediaType= "application/json")
+        public async Task<string> SendRequest(HttpMethod method, string path, List<string> headers = null, string content=null, List<string> paramsValues = null, string mediaType= "application/json")
         {
             AddParamsValuesToPath(ref path, ref paramsValues);
             HttpRequestMessage request = new HttpRequestMessage(method, basePath + path);
             AddHeadersToRequest(ref request, ref headers);
 
 
-            if (contentValues != null)
+            if (content != null)
             request.Content = new StringContent(
-            CreateStringContent(ref contentValues),
+            content, 
             Encoding.UTF8,
             mediaType
-            );
+            );//CreateStringContent(ref contentValues)
 
             HttpResponseMessage response = await httpClient.SendAsync(request);
             string res = await response.Content.ReadAsStringAsync();

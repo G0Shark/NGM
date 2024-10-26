@@ -22,23 +22,9 @@ namespace NGM_Client
         
         static async Task Main(string[] args)
         {
-            int waveInDevices = WaveInEvent.DeviceCount;
-            for (int waveInDevice = 0; waveInDevice < waveInDevices; waveInDevice++)
-            {
-                WaveInCapabilities deviceInfo = WaveInEvent.GetCapabilities(waveInDevice);
-                Console.WriteLine("Device {0}: {1}, {2} channels",
-                    waveInDevice, deviceInfo.ProductName, deviceInfo.Channels);
-            }
+            
 
-
-            Console.WriteLine("userId: ");
-            string userId = Console.ReadLine();
-            Console.WriteLine("chatId: ");
-            string chatId = Console.ReadLine();
-            Console.WriteLine("micNum: ");
-            int micNumber = Convert.ToInt32(Console.ReadLine());
-
-            Client client = new Client(micNumber, userId);
+            Client client = new Client();
 
             /*string res = await client.SendRequest(HttpMethod.Put,  "test/put", new List<string> { "TestName", "test_name"});
             Console.WriteLine("put: "+res);
@@ -62,7 +48,7 @@ namespace NGM_Client
 
 
 
-            await client.VoiceChat().ConnectToVoiceChat(chatId);
+            /*await client.VoiceChat().ConnectToVoiceChat(chatId);
 
             string com = "";
             while (com!="exit")
@@ -76,7 +62,7 @@ namespace NGM_Client
 
             Console.ReadLine();
 
-
+            */
 
         }
 

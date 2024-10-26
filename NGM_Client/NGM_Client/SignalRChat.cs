@@ -16,7 +16,7 @@ namespace NGM_Client
         string basePath;
 
 
-        public SignalRChat(string _basePath, string _userId)
+        public SignalRChat(string _basePath, string _userId = "-1")
         {
             userId = _userId;
             basePath = _basePath;

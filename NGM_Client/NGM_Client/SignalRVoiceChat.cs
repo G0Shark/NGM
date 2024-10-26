@@ -47,7 +47,7 @@ namespace NGM_Client
 
 
 
-        public SignalRVoiceChat(string _basePath, int _micNumber, string _userId)
+        public SignalRVoiceChat(string _basePath, int _micNumber, string _userId="-1")
         {
             basePath = _basePath;
             userId = _userId;
@@ -100,7 +100,7 @@ namespace NGM_Client
                             voiceUsers[_userId].audioBufferStream.ClearBuffer();
 
 
-                        byte[] decompressedData = voiceUsers[_userId].dw.Decode(data); ;// 
+                        byte[] decompressedData = voiceUsers[_userId].dw.Decode(data);// 
                         voiceUsers[_userId].audioBufferStream.AddSamples(decompressedData, 0, decompressedData.Length);
 
 

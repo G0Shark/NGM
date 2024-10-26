@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.IO;
 using OpusSharp.Core;
 using System.Threading.Channels;
+using System.Security.Cryptography;
 namespace NGM_Client
 {
     class DataWrapper
@@ -48,7 +49,10 @@ namespace NGM_Client
             return decoded; // Return number of bytes decoded
         }
     
-    public static byte[] Compress(byte[] data)
+
+        //static
+
+        public static byte[] Compress(byte[] data)
         {
             MemoryStream output = new MemoryStream();
             using (DeflateStream dstream = new DeflateStream(output, CompressionLevel.Optimal))
@@ -67,6 +71,19 @@ namespace NGM_Client
                 dstream.CopyTo(output);
             }
             return output.ToArray();
+        }
+
+        public static byte[] GetHash(string inputString)
+        {
+            using (HashAlgorithm algorithm = SHA256.Create())
+                return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
+        }
+        public static string GetHashString(string inputString)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in GetHash(inputString))
+                sb.Append(b.ToString("X2"));
+            return sb.ToString();
         }
     }
 }

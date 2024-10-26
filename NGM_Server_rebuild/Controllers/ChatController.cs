@@ -1,14 +1,56 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild.Models;
 using Org.BouncyCastle.Ocsp;
 
 namespace NGM_Server_rebuild.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/chat")]
 public class ChatController : Controller
 {
-    [HttpGet]
+    [HttpGet("messages")]
+    public ActionResult<List<Message>> GetMessages(string chatId)
+    {
+        List<Message> messages = new List<Message>();
+        MySqlConnection conn = new MySqlConnection(gb.dbconn);
+        conn.Open();
+        if (Request.Headers.TryGetValue("Username", out var uname) &&
+            Request.Headers.TryGetValue("Password", out var psd))
+        {
+            if (!Permissions.IsUserInChat(uname, psd, chatId))
+            {
+                return BadRequest("Not Authorized");
+            }
+        }
+        else
+        {
+            return BadRequest("Username and/or password are required in header");
+        }
+        using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `messages` WHERE `chatId` = @cid", conn))
+        {
+            cmd.Parameters.AddWithValue("@cid", chatId);
+            using (MySqlDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    messages.Add(new Message
+                    {
+                        id = reader[0].ToString(),
+                        chatId = reader[1].ToString(),
+                        senderId = reader[2].ToString(),
+                        time = reader[3].ToString(),
+                        content = reader[4].ToString(),
+                        answeringMessageId = reader[5].ToString()
+                    });
+                }
+            }
+        }
+        
+        return messages;
+    }
+    
+    [HttpGet("chats")]
     public ActionResult<string> GetChats()
     {
         MySqlConnection conn = new MySqlConnection(gb.dbconn);

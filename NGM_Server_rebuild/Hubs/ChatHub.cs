@@ -1,33 +1,81 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using MySqlX.XDevAPI;
 using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace NGM_Server_rebuild.Hubs;
 
 public class ChatHub : Hub
 {
-    public async Task SendToTextChat(string id, string senderid, string message)
+    public async Task SendToTextChat(string id, string username, string password, string message)
     {
-        Console.WriteLine($"Sending message from {senderid}: {message}; id: {id}");
-        await Clients.Group(id).SendAsync("ReceiveMessage", senderid, message);
+        if (!Secure.TryLogin(username, password))
+        {
+            Clients.Caller.SendAsync("ReceiveError", "Неверный Логин\\Пароль");
+            return;
+        }
+
+        if (!Permissions.IsChatExist(id))
+        {
+            Clients.Caller.SendAsync("RecieveError", "Чата не существует");
+            return;
+        }
+        
+        if (!Permissions.IsUserInChat(username, password, id))
+        {
+            Clients.Caller.SendAsync("RecieveError", "Нет доступа");
+            return;
+        }
+        
+        await Clients.Group(id).SendAsync("ReceiveMessage", Secure.GetUser(username, password), message);
     }
     
     
-    public async Task connect(string id, string senderid)
+    public async Task connect(string id, string username, string password)
     {
-        Console.WriteLine($"Connecting to {id}...");
+        if (!Secure.TryLogin(username, password))
+        {
+            Clients.Caller.SendAsync("ReceiveError", "Неверный Логин\\Пароль");
+            return;
+        }
+
+        if (!Permissions.IsChatExist(id))
+        {
+            Clients.Caller.SendAsync("RecieveError", "Чата не существует");
+            return;
+        }
+        
+        if (!Permissions.IsUserInChat(username, password, id))
+        {
+            Clients.Caller.SendAsync("RecieveError", "Нет доступа");
+            return;
+        }
+        
         await Groups.AddToGroupAsync(Context.ConnectionId, id);
         await base.OnConnectedAsync();
-        await Clients.Group(id).SendAsync("ReceiveMessage", "system", "к чату присоединился " + senderid);
     }
     
     
-    public async Task disconnect(string id, string senderid)
+    public async Task disconnect(string id, string username, string password)
     {
-        Console.WriteLine($"Disconnecting from {Context.ConnectionId}");
+        if (!Secure.TryLogin(username, password))
+        {
+            Clients.Caller.SendAsync("ReceiveError", "Неверный Логин\\Пароль");
+            return;
+        }
+
+        if (!Permissions.IsChatExist(id))
+        {
+            Clients.Caller.SendAsync("RecieveError", "Чата не существует");
+            return;
+        }
+        
+        if (!Permissions.IsUserInChat(username, password, id))
+        {
+            Clients.Caller.SendAsync("RecieveError", "Нет доступа");
+            return;
+        }
         
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, id);
-        
         await base.OnDisconnectedAsync(null);
-        await Clients.Group(id).SendAsync("ReceiveMessage", "system", "из чата ушёл " + senderid);
     }
 }

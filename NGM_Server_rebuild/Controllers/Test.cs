@@ -29,6 +29,24 @@ public class Test : Controller
             return BadRequest("No header found");
         }
     }
-    
-    
+
+    [HttpDelete]
+    public IActionResult Delete()
+    {
+        if (Request.Headers.TryGetValue("Username", out var u) && Request.Headers.TryGetValue("Password", out var p))
+        {
+            if (Secure.TryLogin(u, p))
+            {
+                return Ok("You logged in");
+            }
+            else
+            {
+                return BadRequest("Invalid username or password");
+            }
+        }
+        else
+        {
+            return BadRequest("No header found");
+        }
+    }
 }

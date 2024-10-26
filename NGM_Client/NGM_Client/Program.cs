@@ -1,18 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.Http;
-using System.Text.Json;
-using System.IO;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 
-using System.Media;
-using System.Threading;
-using NAudio.Wave;
-using System.Globalization;
 
 namespace NGM_Client
 {
@@ -22,16 +10,18 @@ namespace NGM_Client
         
         static async Task Main(string[] args)
         {
-            
+
+            string username, password;
+            Console.WriteLine("Username: ");
+            username=Console.ReadLine();
+            Console.WriteLine("Password: ");
+            password = Console.ReadLine();
 
             Client client = new Client();
 
-            /*string res = await client.SendRequest(HttpMethod.Put,  "test/put", new List<string> { "TestName", "test_name"});
-            Console.WriteLine("put: "+res);
-            res = await client.SendRequest(HttpMethod.Post, "test/post", null, new List<string> { "\"Name\"", "\"test_name\"", "\"Value\"","123" });
+            string res;
+            res = await client.SendRequest(HttpMethod.Delete, "Test", new List<string> { "Username", username, "Password", DataWrapper.GetHashString(password) }, "");//
             Console.WriteLine("post: " + res);
-            res = await client.SendRequest(HttpMethod.Post, "test/db", null,null, new List<string> { "Name","test_acc", "password","123","description","qq" });
-            Console.WriteLine("test_post: " + res);*/
 
 
 

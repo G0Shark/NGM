@@ -25,9 +25,7 @@ namespace NGM_Client
             channels = _channels;
 
             Encoder = new OpusEncoder(sampleRate, channels, OpusSharp.Core.Enums.PreDefCtl.OPUS_APPLICATION_AUDIO);//OpusSharp.Core.Enums.PreDefCtl.OPUS_APPLICATION_AUDIO
-                                                              //Encoder.Bitrate = _bitrate;//  64000; // Set bitrate
-
-
+                                                                                                                   //Encoder.Bitrate = _bitrate;//  64000; // Set bitrate
             Decoder = new OpusDecoder(sampleRate, channels);
         }
 
@@ -42,8 +40,10 @@ namespace NGM_Client
 
         public byte[] Decode(byte[] input)
         {
-            byte[] decoded = new byte[3200]; // Allocate buffer for decoded audio    sampleRate / 1000 * 320 * channels
+            //Decoder = new OpusDecoder(sampleRate, channels);
+            byte[] decoded = new byte[frameSize]; // Allocate buffer for decoded audio    sampleRate / 1000 * 320 * channels
             var bytesRead = Decoder.Decode(input, input.Length, decoded, frameSize); // Perform decoding   decoded.Length
+            
             //Console.WriteLine("d: "+decoded.Length);
             return decoded; // Return number of bytes decoded
         }

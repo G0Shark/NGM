@@ -22,7 +22,7 @@ namespace NGM_Client
         
 
         HttpClient httpClient;
-        IConfiguration configurationJs;
+        JsonWrapper jsonWrapper;
         string basePath;
 
         SignalRChat srChat;
@@ -32,8 +32,8 @@ namespace NGM_Client
         {
 
             httpClient = new HttpClient();
-            InitConfiguration("ClientConfig.json");
-            basePath = configurationJs.GetSection("AppPath").Value;
+            jsonWrapper=new JsonWrapper("ClientConfig.json");
+            basePath = jsonWrapper.GetConfigurationJs().GetSection("AppPath").Value;
 
             srChat = new SignalRChat(basePath, _userId);
             srVoiceChat = new SignalRVoiceChat(basePath,_micNumber,_userId);
@@ -41,13 +41,6 @@ namespace NGM_Client
 
         
         //private
-        void InitConfiguration(string path)
-        {
-            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddJsonFile(path);
-
-            configurationJs= configurationBuilder.Build();
-        }
         string CreateStringContent(ref List<string> values)
         {
             string content = "{";
@@ -67,10 +60,6 @@ namespace NGM_Client
         }
 
         //getters
-        public IConfiguration GetJsConfiguration()
-        {
-            return configurationJs;
-        }
 
         public SignalRChat Chat()
         {

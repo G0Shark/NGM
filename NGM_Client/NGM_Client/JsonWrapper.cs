@@ -12,17 +12,23 @@ namespace NGM_Client
     {
         IConfiguration configurationJs;
 
-        public JsonWrapper()
+        public JsonWrapper(){}
+        public JsonWrapper(string pathToFile)
         {
-            
+            Init(pathToFile);
         }
 
-        public void InitJsonConfig(string pathToFile)
+        public void Init(string pathToFile)
         {
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddJsonFile(pathToFile);
 
             configurationJs = configurationBuilder.Build();
+        }
+
+        public IConfiguration GetConfigurationJs()
+        {
+            return configurationJs;
         }
 
     }

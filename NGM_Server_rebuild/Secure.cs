@@ -7,6 +7,11 @@ namespace NGM_Server_rebuild;
 
 public static class Secure
 {
+    public static bool IsValidHeader()
+    {
+        
+    }
+    
     //Функция проверки на наличие пользователя
     public static bool CheckUserExists(string uName)
     {

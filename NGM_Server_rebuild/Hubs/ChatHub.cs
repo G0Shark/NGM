@@ -6,9 +6,9 @@ namespace NGM_Server_rebuild.Hubs;
 
 public class ChatHub : Hub
 {
-    public async Task SendToTextChat(string id, string username, string password, string message)
+    public async Task SendToTextChat(string id, string username, string message)
     {
-        await Clients.Group(id).SendAsync("ReceiveMessage", Secure.GetUser(username, password), message);
+        await Clients.Group(id).SendAsync("ReceiveMessage", username, message);
     }
     
     

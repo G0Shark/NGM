@@ -15,32 +15,46 @@ public class ChatController : Controller
         
     }*/
     [HttpPost("create")]
-    public ActionResult CreateChat(string username, string password, string channelName, string channelType)
+    public ActionResult CreateChat(string channelName, string channelDescription, string channelType)
     {
-        if (!Secure.TryLogin(username, password)) { return BadRequest("Неверный логин\\пароль."); }
-        if (channelName == "" && channelType == "") { return BadRequest("channelName или channelType не указаны."); }
-
-        Channel c = new Channel();
-        
-        MySqlConnection conn = new MySqlConnection(gb.dbconn);
-        conn.Open();
-        using (MySqlCommand cmd = new MySqlCommand("", conn))
-        using (MySqlDataReader reader = cmd.ExecuteReader())
+        if (Request.Headers.TryGetValue("Username", out var username) &&
+            Request.Headers.TryGetValue("Password", out var password))
         {
-            while (reader.Read())
+            if (!Secure.TryLogin(username, password)) { return BadRequest("Неверный логин\\пароль."); }
+            if (channelName == "" && channelType == "") { return BadRequest("channelName или channelType не указаны."); }
+
+            Channel c = new Channel();
+            
+            Console.WriteLine("Sigmasigmasigma"); //Это тествой коммент который я пишу очень быстро
+            
+            MySqlConnection conn = new MySqlConnection(gb.dbconn);
+            conn.Open();
+            using (MySqlCommand cmd = new MySqlCommand("INSERT INTO `chats`(`channelName`, `channelDescription`, `type`) VALUES (@cn,@cd,@ct)", conn))
             {
-                conn.Close();
-                c = new Channel
+                cmd.Parameters.AddWithValue("@cn", channelName);
+                cmd.Parameters.AddWithValue("@cd", channelDescription);
+                cmd.Parameters.AddWithValue("@ct", channelType);
+                using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
-                    Id = reader[0].ToString(),
-                    channelName = reader[1].ToString(),
-                    channelDescription = reader[2].ToString(),
-                    channelType = reader[3].ToString()
-                };
+                    while (reader.Read())
+                    {
+                        c = new Channel
+                        {
+                            Id = reader[0].ToString(),
+                            channelName = reader[1].ToString(),
+                            channelDescription = reader[2].ToString(),
+                            channelType = reader[3].ToString()
+                        };
+                    }
+                }
             }
+            conn.Close();
+            return Ok(c);
         }
-        
-        return Ok(c);
+        else
+        {
+            return BadRequest("bad header");
+        }
     }
     
     [HttpGet("messages")]

@@ -62,14 +62,14 @@ namespace NGM_Client
 
             await hubConnectionText.StartAsync();
             foreach (string channelId in channelsId)
-                await hubConnectionText.InvokeAsync("connect", channelId, userId);
+                await hubConnectionText.InvokeAsync("connect", channelId, username,password);
         }
 
 
         public async Task LeaveTextChat()
         {
             foreach (string channelId in channelsId)
-                await hubConnectionText.InvokeAsync("disconnect", channelId, userId);
+                await hubConnectionText.InvokeAsync("disconnect", channelId, username, password);
             await hubConnectionText.StopAsync();
             channelsId = new List<string>();
         }
@@ -79,7 +79,7 @@ namespace NGM_Client
         public async Task SendToTextChat(string channelId, string content)
         {
             if (channelId == "-1") return;
-            await hubConnectionText.InvokeAsync("SendToTextChat", channelId, userId, content);
+            await hubConnectionText.InvokeAsync("SendToTextChat", channelId, username, content);
         }
 
     }

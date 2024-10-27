@@ -37,19 +37,14 @@ public static class Secure
     {
         MySqlConnection admConnection = new MySqlConnection(gb.admdbconn);
         admConnection.Open();
-
-        Console.WriteLine(uName + " | " + pWord);
         
         using (MySqlCommand command = new MySqlCommand("SELECT COUNT(*) FROM users WHERE `userName` = @u AND `passwordHash` = @p", admConnection))
         {
             command.Parameters.AddWithValue("@u", uName);
             command.Parameters.AddWithValue("@p", pWord);
             
-            Console.WriteLine(command.CommandText);
-            
             int count = Convert.ToInt32(command.ExecuteScalar());
             
-            Console.WriteLine(count > 0);
             admConnection.Close();
                 
             return count > 0;

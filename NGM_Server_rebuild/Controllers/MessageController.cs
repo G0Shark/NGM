@@ -8,6 +8,52 @@ namespace NGM_Server_rebuild.Controllers;
 [Route(Path.MainMessageController)]
 public class MessageController : Controller
 {
+    //Модифицировать сообщение
+    [HttpPatch(Path.ModifyMessage)]
+    public ActionResult ModifyMessage(string msgId, string newContent)
+    {
+        try
+        {
+            if (Request.Headers.TryGetValue("Username", out var username) &&
+                Request.Headers.TryGetValue("Password", out var password))
+            {
+                if (IsOwnMessage(msgId, Secure.GetUser(username, password).id))
+                {
+                    using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("UPDATE `messages` SET `content`= @content WHERE `messageId` = @mid", c))
+                    {
+                        cmd.Parameters.AddWithValue("@content", newContent);
+                        cmd.Parameters.AddWithValue("@mid", msgId);
+                        
+                        cmd.ExecuteNonQuery();
+                        return Ok();
+                    }
+                }
+
+                if (Permissions.CheckForPermissions(Permission.CHANGE, username, password, GetChatIdByMessage(msgId)))
+                {
+                    using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("UPDATE `messages` SET `content`= @content WHERE `messageId` = @mid", c))
+                    {
+                        cmd.Parameters.AddWithValue("@content", newContent);
+                        cmd.Parameters.AddWithValue("@mid", msgId);
+                        
+                        cmd.ExecuteNonQuery();
+                        return Ok();
+                    }
+                }
+                
+                return Unauthorized("Нет прав");
+            }
+            return BadRequest("BAD_HEADER");
+        }
+        catch (Exception ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+    
+    //Удаление сообщений
     [HttpDelete(Path.DeleteMessage)]
     public ActionResult DeleteMessage(string msg_id)
     {
@@ -17,7 +63,18 @@ public class MessageController : Controller
                 Request.Headers.TryGetValue("Password", out var password))
             {
                 if (!Secure.TryLogin(username, password)) { return Unauthorized("Логин\\Пароль неверны"); }
-                
+
+                if (Permissions.CheckForPermissions(Permission.DELETE, username, password, GetChatIdByMessage(msg_id)))
+                {
+                    using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("DELETE FROM `messages` WHERE `messageId` = @mid", c))
+                    {
+                        cmd.Parameters.Add(new MySqlParameter("@mid", msg_id));
+                        cmd.ExecuteNonQuery();
+                        return Ok();
+                    }
+                }
+                return Unauthorized("Нет прав");
             }
             return BadRequest("No AUTH_HEADER");
         }
@@ -41,12 +98,12 @@ public class MessageController : Controller
             {
                 if (!Permissions.IsUserInChat(uname, psd, chatId))
                 {
-                    return BadRequest("Not Authorized");
+                    return Unauthorized("Нет прав");
                 }
             }
             else
             {
-                return BadRequest("Username and/or password are required in header");
+                return BadRequest("BAD_HEADER");
             }
 
             using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `messages` WHERE `chatId` = @cid", conn))
@@ -75,6 +132,33 @@ public class MessageController : Controller
         catch (Exception ex)
         {
             return Conflict(ex.Message);
+        }
+    }
+    
+    //ЛОКАЛЬНЫЕ ФУНКЦИИ -------------------------
+    
+    //Локальная полезная функция для получения чата по айдишнику сообщения
+    private string GetChatIdByMessage(string msg_id)
+    {
+        using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+        using (MySqlCommand cmd = new MySqlCommand("SELECT `chatId` FROM `messages` WHERE `messageId` = @mid", c))
+        {
+            cmd.Parameters.AddWithValue("@mid", msg_id);
+            
+            return cmd.ExecuteScalar().ToString();
+        }
+    }
+    
+    //Локальная функция для быстрого узнавания твоё ли это сообщение
+    private bool IsOwnMessage(string msg_id, string user_id)
+    {
+        using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+        using (MySqlCommand cmd = new MySqlCommand("SELECT `senderId` FROM `messages` WHERE `messageId` = @mid", c))
+        {
+            cmd.Parameters.AddWithValue("@mid", msg_id);
+            string senderId = cmd.ExecuteScalar().ToString();
+            
+            return senderId == user_id;
         }
     }
 }

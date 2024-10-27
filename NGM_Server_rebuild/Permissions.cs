@@ -5,13 +5,49 @@ namespace NGM_Server_rebuild;
 
 public static class Permissions
 {
+    public static bool CheckForPermissions(Permission[] perms, string username, string password, string chatid)
+    {
+        if (!Secure.TryLogin(username, password))
+        {
+            throw new Exception("Неверный логин\\пароль");
+        }
+
+        Permission[] hasPerms = GetPermissions(username, password, chatid);
+        if (hasPerms.Contains(Permission.ALL))
+        {
+            return true;
+        }
+
+        foreach (Permission p in perms)
+        {
+            if (!hasPerms.Contains(p))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    public static bool CheckForPermissions(Permission perms, string username, string password, string chatid)
+    {
+        if (!Secure.TryLogin(username, password))
+        {
+            throw new Exception("Неверный логин\\пароль");
+        }
+
+        Permission[] hasPerms = GetPermissions(username, password, chatid);
+        if (hasPerms.Contains(Permission.ALL) || hasPerms.Contains(perms))
+        {
+            return true;
+        }
+        return true;
+    }
     public static Permission[] GetPermissions(string username, string password, string chatid)
     {
         if (!Secure.TryLogin(username, password)) { throw new Exception("Неверный Логин\\Пароль"); }
         List<Permission> p = new List<Permission>();
         using (MySqlConnection c = new MySqlConnection(gb.dbconn))
         using (MySqlCommand cmd =
-               new MySqlCommand("SELECT  `PermissionType` FROM `permissions` WHERE `userId` = @uid AND `chatId` = @cid",
+               new MySqlCommand("SELECT `PermissionType` FROM `permissions` WHERE `userId` = @uid AND `chatId` = @cid",
                    c))
         {
             cmd.Parameters.AddWithValue("@uid", username);

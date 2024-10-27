@@ -28,4 +28,5 @@ public static class Path
     public const string MainMessageController = MainAPI + "/messages";
     public const string GetMessages = "messagesfromchat"; //GET with AUTH_HEADER and CHAT_ID arg || returns MESSAGES[]
     public const string DeleteMessage = "delmsg"; //DELETE with AUTH_HEADER and MSG_ID arg || returns errors\ok
+    public const string ModifyMessage = "modifmsg"; //PATCH with AUTH_HEADER and MSG_ID, NEW_CONTENT args || returns errors\ok
 }

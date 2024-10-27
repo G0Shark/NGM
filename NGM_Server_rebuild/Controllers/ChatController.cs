@@ -6,7 +6,7 @@ using Org.BouncyCastle.Ocsp;
 namespace NGM_Server_rebuild.Controllers;
 
 [ApiController]
-[Route("api/chat")]
+[Route(Path.MainChatController)]
 public class ChatController : Controller
 {
     /*[HttpPatch("addtochat")]
@@ -14,115 +14,95 @@ public class ChatController : Controller
     {
         
     }*/
-    [HttpPost("create")]
+    [HttpPost(Path.CreateChat)]
     public ActionResult CreateChat(string channelName, string channelDescription, string channelType)
     {
-        if (Request.Headers.TryGetValue("Username", out var username) &&
-            Request.Headers.TryGetValue("Password", out var password))
+        try
         {
-            if (!Secure.TryLogin(username, password)) { return BadRequest("Неверный логин\\пароль."); }
-            if (channelName == "" && channelType == "") { return BadRequest("channelName или channelType не указаны."); }
-
-            Channel c = new Channel();
-            
-            Console.WriteLine("Sigmasigmasigma"); //Это тествой коммент который я пишу очень быстро
-            
-            MySqlConnection conn = new MySqlConnection(gb.dbconn);
-            conn.Open();
-            using (MySqlCommand cmd = new MySqlCommand("INSERT INTO `chats`(`channelName`, `channelDescription`, `type`) VALUES (@cn,@cd,@ct)", conn))
+            if (Request.Headers.TryGetValue("Username", out var username) &&
+                Request.Headers.TryGetValue("Password", out var password))
             {
-                cmd.Parameters.AddWithValue("@cn", channelName);
-                cmd.Parameters.AddWithValue("@cd", channelDescription);
-                cmd.Parameters.AddWithValue("@ct", channelType);
-                using (MySqlDataReader reader = cmd.ExecuteReader())
+                if (!Secure.TryLogin(username!, password!))
                 {
-                    while (reader.Read())
+                    return Unauthorized("Неверный логин\\пароль.");
+                }
+
+                if (channelName == "" && channelType == "")
+                {
+                    return BadRequest("channelName или channelType не указаны.");
+                }
+
+                Channel c = new Channel();
+
+                MySqlConnection conn = new MySqlConnection(gb.dbconn);
+                conn.Open();
+                using (MySqlCommand cmd =
+                       new MySqlCommand(
+                           "INSERT INTO `chats`(`channelName`, `channelDescription`, `type`) VALUES (@cn,@cd,@ct)",
+                           conn))
+                {
+                    cmd.Parameters.AddWithValue("@cn", channelName);
+                    cmd.Parameters.AddWithValue("@cd", channelDescription);
+                    cmd.Parameters.AddWithValue("@ct", channelType);
+
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
                     {
-                        c = new Channel
+                        while (reader.Read())
                         {
-                            Id = reader[0].ToString(),
-                            channelName = reader[1].ToString(),
-                            channelDescription = reader[2].ToString(),
-                            channelType = reader[3].ToString()
-                        };
+                            c = new Channel
+                            {
+                                Id = reader[0].ToString() ?? "null",
+                                channelName = reader[1].ToString() ?? "null",
+                                channelDescription = reader[2].ToString() ?? "null",
+                                channelType = reader[3].ToString() ?? "null"
+                            };
+                        }
                     }
                 }
+
+                conn.Close();
+                return Ok(c);
             }
-            conn.Close();
-            return Ok(c);
-        }
-        else
-        {
+
             return BadRequest("bad header");
         }
+        catch (Exception ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
     
-    [HttpGet("messages")]
-    public ActionResult<List<Message>> GetMessages(string chatId)
-    {
-        List<Message> messages = new List<Message>();
-        MySqlConnection conn = new MySqlConnection(gb.dbconn);
-        conn.Open();
-        if (Request.Headers.TryGetValue("Username", out var uname) &&
-            Request.Headers.TryGetValue("Password", out var psd))
-        {
-            if (!Permissions.IsUserInChat(uname, psd, chatId))
-            {
-                return BadRequest("Not Authorized");
-            }
-        }
-        else
-        {
-            return BadRequest("Username and/or password are required in header");
-        }
-        using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `messages` WHERE `chatId` = @cid", conn))
-        {
-            cmd.Parameters.AddWithValue("@cid", chatId);
-            using (MySqlDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    messages.Add(new Message
-                    {
-                        id = reader[0].ToString(),
-                        chatId = reader[1].ToString(),
-                        senderId = reader[2].ToString(),
-                        time = reader[3].ToString(),
-                        content = reader[4].ToString(),
-                        answeringMessageId = reader[5].ToString()
-                    });
-                }
-            }
-        }
-        conn.Close();
-        return messages;
-    }
-    
-    [HttpGet("chats")]
+    [HttpGet(Path.GetChats)]
     public ActionResult<string> GetChats()
     {
-        MySqlConnection conn = new MySqlConnection(gb.dbconn);
-        conn.Open();
-
-        string id = "";
-        if (Request.Headers.TryGetValue("Username", out var uname) && Request.Headers.TryGetValue("Password", out var psd))
+        try
         {
-            id = new MySqlCommand($"SELECT `id` FROM `users` WHERE `userName` = '{uname}' AND `passwordHash` = '{psd}'", conn).ExecuteScalar().ToString();
-        }
-        else
-        {
-            conn.Close();
+            if (Request.Headers.TryGetValue("Username", out var uname) &&
+                Request.Headers.TryGetValue("Password", out var psd))
+            {
+                MySqlConnection conn = new MySqlConnection(gb.dbconn);
+                conn.Open();
+                string id = new MySqlCommand(
+                        $"SELECT `id` FROM `users` WHERE `userName` = '{uname}' AND `passwordHash` = '{psd}'", conn)
+                    .ExecuteScalar()!.ToString()!;
+                
+                List<string> chatList = new List<string>();
+                MySqlDataReader r =
+                    new MySqlCommand($"SELECT `chatId` FROM `chatmembers` WHERE `userId` = '{id}'", conn)
+                        .ExecuteReader();
+                
+                conn.Close();
+                while (r.Read())
+                {
+                    chatList.Add(r[0].ToString()!);
+                }
+                return Ok(chatList.ToArray());
+            }
             return BadRequest("Bad Header");
         }
-        
-        List<string> chatList = new List<string>();
-        MySqlDataReader r = new MySqlCommand($"SELECT `chatId` FROM `chatmembers` WHERE `userId` = '{id}'", conn)
-            .ExecuteReader();
-        while (r.Read())
+        catch (Exception ex)
         {
-            chatList.Add(r[0].ToString());
+            return Conflict(ex.Message);
         }
-        
-        return Ok(chatList.ToArray());
     }
 }

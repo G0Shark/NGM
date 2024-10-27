@@ -7,20 +7,25 @@ public static class Path
     //2. все переменные написанны БОЛЬШИМИ буквами, если это в body или в header-е то указано _BODY и _HEADER
     //3. если HTTP запрос, то в коменнтарии в начале указан какой запрос, что нужно в него, и что он возвращает
     
-    public static string MainAPI = "/api"; //Главный путь, стоит ВСЕГДА в начале
+    public const string MainAPI = "/api"; //Главный путь, стоит ВСЕГДА в начале
     
     //HUBS
-    public static string MainHUB = MainAPI + "/hub";
-    public static string VoiceHub = MainHUB + "/voice"; //connect with CHANNEL_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToVoiceChat with CHANNEL_ID, USERNAME, BYTE_VOICE 
-    public static string ChatHub = MainHUB + "/chat"; //connect with CHANNEL_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToTextChat with CHANNEL_ID, USERNAME, MESSAGE
+    public const string MainHUB = MainAPI + "/hub";
+    public const string VoiceHub = MainHUB + "/voice"; //connect with CHANNEL_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToVoiceChat with CHANNEL_ID, USERNAME, BYTE_VOICE 
+    public const string ChatHub = MainHUB + "/chat"; //connect with CHANNEL_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToTextChat with CHANNEL_ID, USERNAME, MESSAGE
     
     //ChatController
-    public static string MainChatController = MainAPI + "/chat";
-    public static string GetChats = MainChatController + "/chats"; //GET with AUTH_HEADER || returns CHAT[], where user exists
-    public static string GetMessages = MainChatController + "/messages"; //GET with AUTH_HEADER and CHAT_ID arg || returns MESSAGE[]
+    public const string MainChatController = MainAPI + "/chat";
+    public const string GetChats = "chat"; //GET with AUTH_HEADER || returns CHAT[], where user exists
+    public const string CreateChat = "chat"; //POST with AUTH_HEADER and CHANNEL_NAME, CHANNEL_DESCRIPTION, CHANNEL_TYPE('DM', 'Voice', 'Message') || returns MESSAGE[]
     
     //UserController
-    public static string MainUserController = MainAPI + "/auth";
-    public static string Register = MainUserController + "/register"; //POST with USER_BODY || returns USER
-    public static string Login = MainUserController + "/login"; //POST with USER_BODY || returns USER
+    public const string MainUserController = MainAPI + "/auth";
+    public const string Register = "register"; //POST with USER_BODY || returns USER
+    public const string Login = "login"; //POST with USER_BODY || returns USER
+    
+    //MessageController
+    public const string MainMessageController = MainAPI + "/messages";
+    public const string GetMessages = "messagesfromchat"; //GET with AUTH_HEADER and CHAT_ID arg || returns MESSAGES[]
+    public const string DeleteMessage = "delmsg"; //DELETE with AUTH_HEADER and MSG_ID arg || returns errors\ok
 }

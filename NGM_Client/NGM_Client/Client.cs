@@ -17,6 +17,7 @@ namespace NGM_Client
             username = _username;
             password = _password;
             client = new WClient(_username, _password);
+            client.SetAuthorizationHeader(username,password);
         }
 
         //getters

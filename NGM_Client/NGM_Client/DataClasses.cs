@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NGM_Client
 {
-    public class Channel
+    public class Chat
     {
         public string id { get; set; }
         public string channelName { get; set; }

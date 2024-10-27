@@ -37,13 +37,12 @@ namespace NGM_Client
             return sw.Elapsed.Milliseconds;
         }
 
-        public async Task<Channel[]> GetChannels()
+        public async Task<Chat[]> GetChannels()
         {
-            Channel[] channels=new Channel[1];
-            channels =JsonSerializer.Deserialize<Channel[]>(await client.SendRequest(HttpMethod.Get, "chat/getchats"));
+            Chat[] channels=new Chat[1];
+            channels =JsonSerializer.Deserialize<Chat[]>(await client.SendRequest(HttpMethod.Get, "chat/getchats"));
             return channels;
         }
-
 
     }
 }

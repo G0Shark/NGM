@@ -17,7 +17,7 @@ public static class Path
     //ChatController
     public const string MainChatController = MainAPI + "/chat";
     public const string GetChats = "getchats"; //GET with AUTH_HEADER || returns CHAT[], where user exists
-    public const string CreateChat = "createchat"; //POST with AUTH_HEADER and CHAT_NAME, CHAT_DESCRIPTION, CHAT_TYPE('DM', 'Voice', 'Message') || returns MESSAGE[]
+    public const string CreateChat = "createchat"; //POST with AUTH_HEADER and CHAT_NAME, CHAT_DESCRIPTION, CHAT_TYPE('DM', 'Voice', 'Message') || returns errors\ok
     public const string AddToChat = "addusertochat"; //PATCH with AUTH_HEADER and CHAT_ID, OTHER_USER_ID || returns errors\ok
     public const string DeleteFromChat = "deluserfromchat"; //DELETE with AUTH_HEADER and CHAT_ID, OTHER_USER_ID || returns errors\ok
     

@@ -9,16 +9,47 @@ namespace NGM_Server_rebuild.Controllers;
 [Route(Path.MainChatController)]
 public class ChatController : Controller
 {
-    /*[HttpPatch("addtochat")]
-    public ActionResult AddToChat(string username, string password, string chatid, string other_username)
+    [HttpPatch(Path.AddToChat)]
+    public ActionResult AddToChat(string chatid, string other_id)
     {
-        
-    }*/
+        try
+        {
+            if (Request.Headers.TryGetValue("Username", out var username) &&
+                Request.Headers.TryGetValue("Password", out var password))
+            {
+                if (Permissions.CheckForPermissions(Permission.CHAT_ADDPEOPLE, username, password, chatid))
+                {
+                    using(MySqlConnection c = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("INSERT INTO `chatmembers`(`chatId`, `userId`) VALUES (@cid,@uid)", c))
+                    {
+                        cmd.Parameters.AddWithValue("@cid", chatid);
+                        cmd.Parameters.AddWithValue("@uid", other_id);
+                        
+                        cmd.ExecuteNonQuery();
+                        return Ok();
+                    }
+                }
+
+                return Unauthorized("Нет прав");
+            }
+            return BadRequest("bad header");
+        }
+        catch (Exception ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+    
+    //Создание чата и авто-добавление создателя в пользователей чата
     [HttpPost(Path.CreateChat)]
     public ActionResult CreateChat(string channelName, string channelDescription, string channelType)
     {
         try
         {
+            if (channelType.ToLower() != "dm" || channelType.ToLower() != "voice" || channelType.ToLower() != "text")
+            {
+                return BadRequest("Неправильный вид канала");
+            }
             if (Request.Headers.TryGetValue("Username", out var username) &&
                 Request.Headers.TryGetValue("Password", out var password))
             {
@@ -60,6 +91,27 @@ public class ChatController : Controller
                     }
                 }
 
+                User u = Secure.GetUser(username, password);
+                
+                using (MySqlCommand cmd =
+                       new MySqlCommand("INSERT INTO `chatmembers`( `chatId`, `userId`) VALUES (@cid,@uid)", conn))
+                {
+                    cmd.Parameters.AddWithValue("@cid", c.Id);
+                    cmd.Parameters.AddWithValue("@uid", u.id);
+                    
+                    cmd.ExecuteNonQuery();
+                }
+                
+                using (MySqlCommand cmd =
+                       new MySqlCommand("INSERT INTO `permissions`(`userId`, `chatId`, `PermissionType`) VALUES (@uid,@cid,@permType)", conn))
+                {
+                    cmd.Parameters.AddWithValue("@cid", c.Id);
+                    cmd.Parameters.AddWithValue("@uid", u.id);
+                    cmd.Parameters.AddWithValue("@permType", channelType.ToUpper());
+                    
+                    cmd.ExecuteNonQuery();
+                }
+
                 conn.Close();
                 return Ok(c);
             }
@@ -72,6 +124,7 @@ public class ChatController : Controller
         }
     }
     
+    //Получение всех чатов
     [HttpGet(Path.GetChats)]
     public ActionResult<string> GetChats()
     {

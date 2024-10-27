@@ -18,11 +18,12 @@ public static class Path
     public const string MainChatController = MainAPI + "/chat";
     public const string GetChats = "chat"; //GET with AUTH_HEADER || returns CHAT[], where user exists
     public const string CreateChat = "chat"; //POST with AUTH_HEADER and CHANNEL_NAME, CHANNEL_DESCRIPTION, CHANNEL_TYPE('DM', 'Voice', 'Message') || returns MESSAGE[]
+    public const string AddToChat = "chat"; //PATCH with AUTH_HEADER and CHAT_ID, OTHER_USER_ID || 
     
     //UserController
     public const string MainUserController = MainAPI + "/auth";
     public const string Register = "register"; //POST with USER_BODY || returns USER
-    public const string Login = "login"; //POST with USER_BODY || returns USER
+    public const string Login = "login"; //POST with AUTH_HEADER || returns USER
     
     //MessageController
     public const string MainMessageController = MainAPI + "/messages";

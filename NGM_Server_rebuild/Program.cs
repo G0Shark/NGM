@@ -1,5 +1,6 @@
 //Привет мир!
 using System;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using MySql.Data.MySqlClient;
@@ -7,6 +8,7 @@ using Mysqlx;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Controllers;
 using NGM_Server_rebuild.Hubs;
+using Org.BouncyCastle.Asn1.Ocsp;
 using ZstdSharp.Unsafe;
 using Path = NGM_Server_rebuild.Path;
 

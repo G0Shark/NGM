@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild.Models;
 
 namespace NGM_Server_rebuild.Controllers;
@@ -7,22 +8,37 @@ namespace NGM_Server_rebuild.Controllers;
 [Route(Path.MainUserController)]
 public class UserController : Controller
 {
+    [HttpHead]
+    public IActionResult Head()
+    {
+        var c = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
+        Console.WriteLine($"User: {c.Scheme} - {c.Parameter}");
+        return Ok();
+    }
+    
     [HttpPost(Path.Login)]
-    public IActionResult Login([FromBody]User u)
+    public IActionResult Login()
     {
         try
         {
-            if (!Secure.CheckUserExists(u.Username))
-            {
-                return NotFound("Пользователя не существует");
+            if (Request.Headers.TryGetValue("Username", out var username) &&
+                Request.Headers.TryGetValue("Password", out var password))
+            { 
+                
+                if (!Secure.CheckUserExists(username))
+                {
+                    return NotFound("Пользователя не существует");
+                }
+
+                if (Secure.TryLogin(username, password))
+                {
+                    return Ok(Secure.GetUser(username, password));
+                }
+
+                return Unauthorized("Логин\\Пароль неверны.");
             }
 
-            if (Secure.TryLogin(u.Username, u.PasswordHash))
-            {
-                return Ok(Secure.GetUser(u.Username, u.PasswordHash));
-            }
-
-            return Unauthorized("Логин\\Пароль неверны.");
+            return BadRequest("bad header");
         }
         catch (Exception ex)
         {

@@ -17,7 +17,7 @@ public static class Path
     //ChatController
     public const string MainChatController = MainAPI + "/chat";
     public const string GetChats = "getchats"; //GET with AUTH_HEADER || returns CHAT[], where user exists
-    public const string CreateChat = "createchat"; //POST with AUTH_HEADER and CHAT_NAME, CHAT_DESCRIPTION, CHAT_TYPE('DM', 'Voice', 'Message') || returns errors\ok
+    public const string CreateChat = "createchat"; //POST with AUTH_HEADER and CHAT_NAME, CHAT_DESCRIPTION, CHAT_TYPE('DM', 'Voice', 'Text') || returns errors\ok
     public const string AddToChat = "addusertochat"; //PATCH with AUTH_HEADER and CHAT_ID, OTHER_USER_ID || returns errors\ok
     public const string DeleteFromChat = "deluserfromchat"; //DELETE with AUTH_HEADER and CHAT_ID, OTHER_USER_ID || returns errors\ok
     
@@ -31,4 +31,7 @@ public static class Path
     public const string GetMessages = "messagesfromchat"; //GET with AUTH_HEADER and CHAT_ID arg || returns MESSAGES[]
     public const string DeleteMessage = "delmsg"; //DELETE with AUTH_HEADER and MSG_ID arg || returns errors\ok
     public const string ModifyMessage = "modifmsg"; //PATCH with AUTH_HEADER and MSG_ID, NEW_CONTENT args || returns errors\ok
+    
+    //PartnershipController
+    public const string MainPartnershipController = MainAPI + "/partnership";
 }

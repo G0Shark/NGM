@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using NGM_Server_rebuild.Models;
 
@@ -14,8 +15,7 @@ public class MessageController : Controller
     {
         try
         {
-            if (Request.Headers.TryGetValue("Username", out var username) &&
-                Request.Headers.TryGetValue("Password", out var password))
+            if (Secure.IsValidHeader(Request, out string username, out string password))
             {
                 if (IsOwnMessage(msgId, Secure.GetUser(username, password).id))
                 {
@@ -59,8 +59,7 @@ public class MessageController : Controller
     {
         try
         {
-            if (Request.Headers.TryGetValue("Username", out var username) &&
-                Request.Headers.TryGetValue("Password", out var password))
+            if (Secure.IsValidHeader(Request, out string username, out string password))
             {
                 if (!Secure.TryLogin(username, password)) { return Unauthorized("Логин\\Пароль неверны"); }
 

@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using MySql.Data.MySqlClient;
 using NGM_Server_rebuild.Models;
@@ -7,9 +8,18 @@ namespace NGM_Server_rebuild;
 
 public static class Secure
 {
-    public static bool IsValidHeader()
+    public static bool IsValidHeader(HttpRequest req, out string username, out string password)
     {
-        
+        username = "";
+        password = "";
+        if (req.Headers.TryGetValue("Authorization", out var auth))
+        {
+            var headers = AuthenticationHeaderValue.Parse(req.Headers["Authorization"]!);
+            username = headers.Scheme;
+            password = headers.Parameter;
+            return true;
+        }
+        return false;
     }
     
     //Функция проверки на наличие пользователя

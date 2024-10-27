@@ -9,13 +9,49 @@ namespace NGM_Server_rebuild.Controllers;
 [Route(Path.MainChatController)]
 public class ChatController : Controller
 {
+    //Удаление пользователя из чата
+    [HttpDelete(Path.DeleteFromChat)]
+    public ActionResult DeleteFromChat(string chatId, string userId)
+    {
+        try
+        {
+            if (Secure.IsValidHeader(Request, out string username, out string password))
+            {
+                if (Permissions.CheckForPermissions(Permission.CHAT_DELPEOPLE, username, password, chatId))
+                {
+                    using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("DELETE FROM `chatmembers` WHERE `userId` = @uid AND `chatId` = @cid", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@uid", userId);
+                        cmd.Parameters.AddWithValue("@cid", chatId);
+                    }
+
+                    using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("DELETE FROM `permissions` WHERE `userId` = @uid AND `chatId` = @cid", conn)) 
+                    {
+                        cmd.Parameters.AddWithValue("@uid", userId);
+                        cmd.Parameters.AddWithValue("@cid", chatId);
+                    }
+
+                    return Ok();
+                }
+                return Unauthorized("Нет прав");
+            }
+            return BadRequest("bad header");
+        }
+        catch (Exception ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+    
+    //Добавление пользователя в чат
     [HttpPatch(Path.AddToChat)]
     public ActionResult AddToChat(string chatid, string other_id)
     {
         try
         {
-            if (Request.Headers.TryGetValue("Username", out var username) &&
-                Request.Headers.TryGetValue("Password", out var password))
+            if (Secure.IsValidHeader(Request, out string username, out string password))
             {
                 if (Permissions.CheckForPermissions(Permission.CHAT_ADDPEOPLE, username, password, chatid))
                 {
@@ -29,7 +65,6 @@ public class ChatController : Controller
                         return Ok();
                     }
                 }
-
                 return Unauthorized("Нет прав");
             }
             return BadRequest("bad header");
@@ -50,8 +85,7 @@ public class ChatController : Controller
             {
                 return BadRequest("Неправильный вид канала");
             }
-            if (Request.Headers.TryGetValue("Username", out var username) &&
-                Request.Headers.TryGetValue("Password", out var password))
+            if (Secure.IsValidHeader(Request, out string username, out string password))
             {
                 if (!Secure.TryLogin(username!, password!))
                 {
@@ -130,26 +164,49 @@ public class ChatController : Controller
     {
         try
         {
-            if (Request.Headers.TryGetValue("Username", out var uname) &&
-                Request.Headers.TryGetValue("Password", out var psd))
+            if (Secure.IsValidHeader(Request, out string username, out string password))
             {
-                MySqlConnection conn = new MySqlConnection(gb.dbconn);
-                conn.Open();
-                string id = new MySqlCommand(
-                        $"SELECT `id` FROM `users` WHERE `userName` = '{uname}' AND `passwordHash` = '{psd}'", conn)
-                    .ExecuteScalar()!.ToString()!;
-                
                 List<string> chatList = new List<string>();
-                MySqlDataReader r =
-                    new MySqlCommand($"SELECT `chatId` FROM `chatmembers` WHERE `userId` = '{id}'", conn)
-                        .ExecuteReader();
-                
-                conn.Close();
-                while (r.Read())
+                using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+                using (MySqlCommand cmd = new MySqlCommand("SELECT `chatId` FROM `chatmembers` WHERE userId = @uid", c))
                 {
-                    chatList.Add(r[0].ToString()!);
+                    cmd.Parameters.AddWithValue("@uid", Secure.GetUser(username, password).id);
+                    c.Open();
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            chatList.Add(reader[0].ToString());
+                        }
+                    }
+                    c.Close();
+            
                 }
-                return Ok(chatList.ToArray());
+                List<Channel> channelList = new List<Channel>();
+                foreach (string cid in chatList)
+                {
+                    using (MySqlConnection c = new MySqlConnection(gb.dbconn))
+                    using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `chats` WHERE `id` = @cid", c))
+                    {
+                        cmd.Parameters.AddWithValue("@cid", cid);
+                        c.Open();
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                channelList.Add(new Channel
+                                {
+                                    Id = reader[0].ToString(),
+                                    channelName = reader[1].ToString(),
+                                    channelDescription = reader[2].ToString(),
+                                    channelType = reader[3].ToString()
+                                });
+                            }
+                        }
+                        c.Close();
+                    }
+                }
+                return Ok(channelList.ToArray());
             }
             return BadRequest("Bad Header");
         }

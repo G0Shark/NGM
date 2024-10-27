@@ -8,21 +8,12 @@ namespace NGM_Server_rebuild.Controllers;
 [Route(Path.MainUserController)]
 public class UserController : Controller
 {
-    [HttpHead]
-    public IActionResult Head()
-    {
-        var c = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-        Console.WriteLine($"User: {c.Scheme} - {c.Parameter}");
-        return Ok();
-    }
-    
     [HttpPost(Path.Login)]
     public IActionResult Login()
     {
         try
         {
-            if (Request.Headers.TryGetValue("Username", out var username) &&
-                Request.Headers.TryGetValue("Password", out var password))
+            if (Secure.IsValidHeader(Request, out string username, out string password))
             { 
                 
                 if (!Secure.CheckUserExists(username))

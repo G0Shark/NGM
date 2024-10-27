@@ -23,7 +23,7 @@ public static class Permissions
     public static bool IsUserInChat(string username, string password, string chatid)
     {
         MySqlConnection c = new MySqlConnection(gb.dbconn);
-        if (!Secure.TryLogin(username, password)) { throw new Exception("Invalid username or password"); }
+        if (!Secure.TryLogin(username, password)) { throw new Exception("Неверный Логин\\Пароль"); }
         User u = Secure.GetUser(username, password);
         c.Open();
         using (MySqlCommand cmd = new MySqlCommand("SELECT COUNT(*) FROM `chatmembers` WHERE `userId` = @uid AND `chatId` = @cid", c))

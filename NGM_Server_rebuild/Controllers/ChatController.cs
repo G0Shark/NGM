@@ -9,6 +9,40 @@ namespace NGM_Server_rebuild.Controllers;
 [Route("api/chat")]
 public class ChatController : Controller
 {
+    /*[HttpPatch("addtochat")]
+    public ActionResult AddToChat(string username, string password, string chatid, string other_username)
+    {
+        
+    }*/
+    [HttpPost("create")]
+    public ActionResult CreateChat(string username, string password, string channelName, string channelType)
+    {
+        if (!Secure.TryLogin(username, password)) { return BadRequest("Неверный логин\\пароль."); }
+        if (channelName == "" && channelType == "") { return BadRequest("channelName или channelType не указаны."); }
+
+        Channel c = new Channel();
+        
+        MySqlConnection conn = new MySqlConnection(gb.dbconn);
+        conn.Open();
+        using (MySqlCommand cmd = new MySqlCommand("", conn))
+        using (MySqlDataReader reader = cmd.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                conn.Close();
+                c = new Channel
+                {
+                    Id = reader[0].ToString(),
+                    channelName = reader[1].ToString(),
+                    channelDescription = reader[2].ToString(),
+                    channelType = reader[3].ToString()
+                };
+            }
+        }
+        
+        return Ok(c);
+    }
+    
     [HttpGet("messages")]
     public ActionResult<List<Message>> GetMessages(string chatId)
     {
@@ -46,7 +80,7 @@ public class ChatController : Controller
                 }
             }
         }
-        
+        conn.Close();
         return messages;
     }
     

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using MySql.Data.MySqlClient;
 using NGM_Server_rebuild.Models;
 
@@ -7,60 +8,66 @@ namespace NGM_Server_rebuild;
 public static class Secure
 {
     //Функция проверки на наличие пользователя
-    public static bool CheckUserExists(string UName)
+    public static bool CheckUserExists(string uName)
     {
-        MySqlConnection adm_connection = new MySqlConnection(gb.admdbconn);
+        MySqlConnection admConnection = new MySqlConnection(gb.admdbconn);
         try
         {
-            adm_connection.Open();
+            admConnection.Open();
 
-            using (MySqlCommand command = new MySqlCommand("SELECT COUNT(*) FROM users WHERE userName = @u", adm_connection))
+            using (MySqlCommand command = new MySqlCommand("SELECT COUNT(*) FROM users WHERE userName = @u", admConnection))
             {
-                command.Parameters.AddWithValue("@u", UName);
+                command.Parameters.AddWithValue("@u", uName);
 
                 int count = Convert.ToInt32(command.ExecuteScalar());
-                adm_connection.Close();
+                admConnection.Close();
                 
                 return count > 0;
             }
         }
         catch (Exception ex)
         {
-            adm_connection.Close();
+            admConnection.Close();
             return false;
         }
     }
     
     //Функция попытки входа
-    public static bool TryLogin(string UName, string PWord)
+    public static bool TryLogin(string uName, string pWord)
     {
-        MySqlConnection adm_connection = new MySqlConnection(gb.admdbconn);
-        adm_connection.Open();
+        MySqlConnection admConnection = new MySqlConnection(gb.admdbconn);
+        admConnection.Open();
 
-        using (MySqlCommand command = new MySqlCommand("SELECT COUNT(*) FROM users WHERE userName = @u AND passwordHash = @p", adm_connection))
+        Console.WriteLine(uName + " | " + pWord);
+        
+        using (MySqlCommand command = new MySqlCommand("SELECT COUNT(*) FROM users WHERE `userName` = @u AND `passwordHash` = @p", admConnection))
         {
-            command.Parameters.AddWithValue("@u", UName);
-            command.Parameters.AddWithValue("@p", PWord);
-
+            command.Parameters.AddWithValue("@u", uName);
+            command.Parameters.AddWithValue("@p", pWord);
+            
+            Console.WriteLine(command.CommandText);
+            
             int count = Convert.ToInt32(command.ExecuteScalar());
-            adm_connection.Close();
+            
+            Console.WriteLine(count > 0);
+            admConnection.Close();
                 
             return count > 0;
         }
     }
     
     //Функция получения пользователя
-    public static User GetUser(string UName, string PWord)
+    public static User GetUser(string uName, string pWord)
     {
-        MySqlConnection adm_connection = new MySqlConnection(gb.admdbconn);
-        if (!TryLogin(UName, PWord)) { throw new Exception("Неверный Username или Password."); }
-        adm_connection.Open();
+        MySqlConnection admConnection = new MySqlConnection(gb.admdbconn);
+        if (!TryLogin(uName, pWord)) { throw new Exception("Неверный Username или Password."); }
+        admConnection.Open();
         try
         {
-            using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `users` WHERE `userName` = @UName AND `passwordHash` = @PWord", adm_connection))
+            using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `users` WHERE `userName` = @u AND `passwordHash` = @p", admConnection))
             {
-                cmd.Parameters.AddWithValue("@UName", UName);
-                cmd.Parameters.AddWithValue("@PWord", PWord);
+                cmd.Parameters.AddWithValue("@u", uName);
+                cmd.Parameters.AddWithValue("@p", pWord);
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -79,46 +86,46 @@ public static class Secure
         }
         catch (Exception ex)
         {
-            adm_connection.Close();
+            admConnection.Close();
             return null;
         }
-        adm_connection.Close();
+        admConnection.Close();
         return null;
     }
     
     //Функция попытки создания пользователя
-    public static void CreateUser(string UName, string PWord, string DName, string Email)
+    public static void CreateUser(string uName, string pWord, string dName, string email)
     {
-        MySqlConnection adm_connection = new MySqlConnection(gb.admdbconn);
-        if (UName.Trim() == "" || PWord.Trim() == "" || Email.Trim() == "")
+        MySqlConnection admConnection = new MySqlConnection(gb.admdbconn);
+        if (uName.Trim() == "" || pWord.Trim() == "" || email.Trim() == "")
         {
             throw new Exception("Username, Password и Email не должен быть нулём или пустой строкой");
         }
 
-        if (PWord.Length < 48)
+        if (pWord.Length < 48)
         {
             throw new Exception("Хэш пароля не совпадает");
         }
-        if (DName.Trim() == "")
+        if (dName.Trim() == "")
         {
-            DName = UName;
+            dName = uName;
         }
-        if (CheckUserExists(UName))
+        if (CheckUserExists(uName))
         {
             throw new Exception("Пользователь существует");
         }
         
-        adm_connection.Open();
+        admConnection.Open();
 
-        using (MySqlCommand command = new MySqlCommand("INSERT INTO `users`(`displayName`, `userName`, `passwordHash`, `email`) VALUES (@dn,@un,@ph,@em)", adm_connection))
+        using (MySqlCommand command = new MySqlCommand("INSERT INTO `users`(`displayName`, `userName`, `passwordHash`, `email`) VALUES (@dn,@un,@ph,@em)", admConnection))
         {
-            command.Parameters.AddWithValue("@dn", DName);
-            command.Parameters.AddWithValue("@un", UName);
-            command.Parameters.AddWithValue("@ph", PWord);
-            command.Parameters.AddWithValue("@em", Email);
+            command.Parameters.AddWithValue("@dn", dName);
+            command.Parameters.AddWithValue("@un", uName);
+            command.Parameters.AddWithValue("@ph", pWord);
+            command.Parameters.AddWithValue("@em", email);
 
             command.ExecuteNonQuery();
-            adm_connection.Close();
+            admConnection.Close();
         }
     }
 }

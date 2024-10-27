@@ -8,24 +8,6 @@ public class ChatHub : Hub
 {
     public async Task SendToTextChat(string id, string username, string password, string message)
     {
-        if (!Secure.TryLogin(username, password))
-        {
-            Clients.Caller.SendAsync("ReceiveError", "Неверный Логин\\Пароль");
-            return;
-        }
-
-        if (!Permissions.IsChatExist(id))
-        {
-            Clients.Caller.SendAsync("RecieveError", "Чата не существует");
-            return;
-        }
-        
-        if (!Permissions.IsUserInChat(username, password, id))
-        {
-            Clients.Caller.SendAsync("RecieveError", "Нет доступа");
-            return;
-        }
-        
         await Clients.Group(id).SendAsync("ReceiveMessage", Secure.GetUser(username, password), message);
     }
     

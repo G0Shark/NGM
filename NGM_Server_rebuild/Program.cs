@@ -3,6 +3,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using MySql.Data.MySqlClient;
+using Mysqlx;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Controllers;
 using NGM_Server_rebuild.Hubs;
@@ -60,6 +61,11 @@ app.MapControllers();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.MapGet("/api/ping", () =>
+{
+    return "Pong!";
+});
 
 //Маппинг SignalR хабов
 app.MapHub<ChatHub>("/api/hub/chat"); //Все текстовые сообщения

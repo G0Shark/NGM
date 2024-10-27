@@ -11,8 +11,8 @@ public static class Path
     
     //HUBS
     public const string MainHUB = MainAPI + "/hub";
-    public const string VoiceHub = MainHUB + "/voice"; //connect with CHANNEL_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToVoiceChat with CHANNEL_ID, USERNAME, BYTE_VOICE 
-    public const string ChatHub = MainHUB + "/chat"; //connect with CHANNEL_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToTextChat with CHANNEL_ID, USERNAME, MESSAGE
+    public const string VoiceHub = MainHUB + "/voice"; //connect with CHAT_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToVoiceChat with CHAT_ID, USERNAME, BYTE_VOICE 
+    public const string ChatHub = MainHUB + "/chat"; //connect with CHAT_ID, USERNAME, PASSWORD || disconnect with CHANELL_ID, USERNAME, PASSWORD || SendToTextChat with CHAT_ID, USERNAME, MESSAGE
     
     //ChatController
     public const string MainChatController = MainAPI + "/chat";

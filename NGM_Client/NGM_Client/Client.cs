@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace NGM_Client
@@ -36,6 +37,12 @@ namespace NGM_Client
             return sw.Elapsed.Milliseconds;
         }
 
+        public async Task<Channel[]> GetChannels()
+        {
+            Channel[] channels=new Channel[1];
+            channels =JsonSerializer.Deserialize<Channel[]>(await client.SendRequest(HttpMethod.Get, "chat/getchats"));
+            return channels;
+        }
 
 
     }

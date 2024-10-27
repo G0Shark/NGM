@@ -48,7 +48,7 @@ namespace NGM_Client
                 switch(com[0])
                 {
                     case "set_volume":
-                        client.GetWClient().VoiceChat().SetUserVolume(com[1], float.Parse(com[2], CultureInfo.InvariantCulture) / 2f);
+                        client.GetWClient().VoiceChat().SetUserVolume(com[1], float.Parse(com[2], CultureInfo.InvariantCulture));
                         Console.WriteLine(string.Format("volume user {0}, changed to {1}", com[1], com[2]));
                         break;
                     case "voice_connect":

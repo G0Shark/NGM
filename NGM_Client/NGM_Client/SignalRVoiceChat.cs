@@ -12,23 +12,52 @@ using System.Data;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Timers;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace NGM_Client
 {
     class SignalRVoiceChat
     {
 
-        struct VoiceUser
+        class VoiceUser
         {
-            public BufferedWaveProvider audioBufferStream { get; set; }
-            public WaveOutEvent netAudioOutput { get; set; }
-            public DataWrapper dw { get; set; }
+             BufferedWaveProvider audioBufferStream;
+             WaveOutEvent netAudioOutput;
+             DataWrapper dw;
+             float volume  = 1;
+
+            public void SetVolume (float _volume) { volume = _volume; }
+            public void SetAudioBufferStream(BufferedWaveProvider _audioBufferStream) { audioBufferStream = _audioBufferStream; }
+            public void SetNetAudioOutput(WaveOutEvent _netAudioOutput) { netAudioOutput = _netAudioOutput; }
+            public void Setdw(DataWrapper _dw) { dw = _dw; }
+
+            public ref float GetVolume() { return ref volume; }
+            public ref BufferedWaveProvider GetAudioBufferStream() { return ref audioBufferStream; }
+            public ref WaveOutEvent GetNetAudioOutput() { return ref netAudioOutput; }
+            public ref DataWrapper Getdw() { return ref dw; }
 
             public VoiceUser(BufferedWaveProvider _audioBufferStream, WaveOutEvent _netAudioOutput, DataWrapper _dw)//
             {
                 audioBufferStream = _audioBufferStream;
                 netAudioOutput = _netAudioOutput;
                 dw = _dw;
+            }
+
+            public void SetUserVolume(float val)
+            {
+                
+                volume= val;
+                netAudioOutput.Stop();
+                netAudioOutput=new WaveOutEvent();
+
+                var volumeSampleProvider = new VolumeSampleProvider(audioBufferStream.ToSampleProvider());
+                volumeSampleProvider.Volume = val;
+                netAudioOutput.Init(volumeSampleProvider);
+
+                netAudioOutput.Play();
+                
+                
+
             }
         };
 
@@ -53,15 +82,16 @@ namespace NGM_Client
         {
             voiceUsers[id] = new VoiceUser(new BufferedWaveProvider(micInput.WaveFormat), new WaveOutEvent(), new DataWrapper(24000, 0, 4800, 1));// 24
 
-            voiceUsers[id].netAudioOutput.Init(voiceUsers[id].audioBufferStream);
+            
 
-            var volumeSampleProvider = new VolumeSampleProvider(voiceUsers[id].audioBufferStream.ToSampleProvider());
+            var volumeSampleProvider = new VolumeSampleProvider(voiceUsers[id].GetAudioBufferStream().ToSampleProvider());
             volumeSampleProvider.Volume = 2.0f;
 
-            voiceUsers[id].netAudioOutput.Init(volumeSampleProvider);
-            voiceUsers[id].netAudioOutput.Volume = 0.5f;
+            //voiceUsers[id].netAudioOutput.Init(voiceUsers[id].audioBufferStream);
+            voiceUsers[id].GetNetAudioOutput().Init(volumeSampleProvider);
+            voiceUsers[id].GetNetAudioOutput().Volume = 0.5f;
 
-            voiceUsers[id].netAudioOutput.Play();
+            voiceUsers[id].GetNetAudioOutput().Play();
         }
         //getters
 
@@ -104,8 +134,14 @@ namespace NGM_Client
 
         public void SetUserVolume(string uid, float val)
         {
-            if(voiceUsers.ContainsKey(uid))
-                voiceUsers[uid].netAudioOutput.Volume = val;
+            if (voiceUsers.ContainsKey(uid))
+            voiceUsers[uid].SetUserVolume(val);
+
+            /*
+             * Console.WriteLine(uid + ": " + voiceUsers[uid].GetVolume() + " " + uid + val);
+            foreach (KeyValuePair<string, VoiceUser> p in voiceUsers)
+                Console.WriteLine(p.Key + ": " + p.Value.GetVolume());
+            */
         }
 
 
@@ -133,12 +169,12 @@ namespace NGM_Client
                     try
                     {
 
-                        if (voiceUsers[_username].audioBufferStream.BufferedBytes >= 6400)
-                            voiceUsers[_username].audioBufferStream.ClearBuffer();
+                        if (voiceUsers[_username].GetAudioBufferStream().BufferedBytes >= 6400)
+                            voiceUsers[_username].GetAudioBufferStream().ClearBuffer();
 
 
-                        byte[] decompressedData = voiceUsers[_username].dw.Decode(data);// 
-                        voiceUsers[_username].audioBufferStream.AddSamples(decompressedData, 0, decompressedData.Length);
+                        byte[] decompressedData = voiceUsers[_username].Getdw().Decode(data);// 
+                        voiceUsers[_username].GetAudioBufferStream().AddSamples(decompressedData, 0, decompressedData.Length);
 
                     }
                     catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -174,7 +210,7 @@ namespace NGM_Client
 
                 foreach (KeyValuePair<string, VoiceUser> entry in voiceUsers)
                 {
-                    voiceUsers[entry.Key].netAudioOutput.Stop();
+                    voiceUsers[entry.Key].GetNetAudioOutput().Stop();
                 }
 
                 voiceUsers = new Dictionary<string, VoiceUser>();

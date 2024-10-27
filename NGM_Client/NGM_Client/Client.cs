@@ -39,9 +39,31 @@ namespace NGM_Client
 
         public async Task<Chat[]> GetChats()
         {
-            Chat[] channels=new Chat[1];
-            channels =JsonSerializer.Deserialize<Chat[]>(await client.SendRequest(HttpMethod.Get, "chat/getchats"));
+            Chat[] channels=new Chat[0];
+            string data = await client.SendRequest(HttpMethod.Get, "chat/getchats");
+            try
+            {
+                channels = JsonSerializer.Deserialize<Chat[]>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
             return channels;
+        }
+        public async Task<Chat> CteateChats(string chatName, string chatDescription= "_", string chatType= "text")
+        {
+            string data = await client.SendRequest(HttpMethod.Post, "chat/createchat", null, null, new List<string> {
+                    "CHAT_NAME", chatName,
+                "CHAT_DESCRIPTION", chatDescription ,
+                "CHAT_TYPE", chatType});
+            try
+            {
+                return JsonSerializer.Deserialize<Chat>(data);
+            }
+            catch (Exception ex) { Console.WriteLine(data); return new Chat(); }
+            
         }
 
     }

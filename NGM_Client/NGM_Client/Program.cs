@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 
@@ -21,7 +22,7 @@ namespace NGM_Client
             password = DataWrapper.GetHashString(Console.ReadLine());
 
             Client client = new Client(username, password);
-            
+
 
 
 
@@ -39,7 +40,7 @@ namespace NGM_Client
 
 
             //Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
-
+            string res;
             string[] com = {""};
             while (com[0]!="exit")
             {
@@ -56,7 +57,6 @@ namespace NGM_Client
                         break;
                     case "register":
                         {
-                            string res;
                             JsonObject tmp = new JsonObject();
 
                             tmp.Add("id", "0");
@@ -66,12 +66,16 @@ namespace NGM_Client
                             tmp.Add("DisplayName", "");
 
 
-                            res = await client.GetWClient().SendRequest(HttpMethod.Post, "auth/register", tmp, null);//
+                            res = await client.GetWClient().SendRequest(HttpMethod.Post, "auth/register", tmp.ToString(), null);//
                             Console.WriteLine(res);
                         }
                         break;
                     case "ping":
                         Console.WriteLine(await client.GetPing());
+                        break;
+                    case "test":
+                        Chat ch = await client.CteateChats("test");
+                        Console.WriteLine(ch.id);
                         break;
                 }
             }

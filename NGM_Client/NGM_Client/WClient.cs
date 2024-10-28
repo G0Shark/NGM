@@ -91,7 +91,7 @@ namespace NGM_Client
 
         //public
 
-        public async Task<string> SendRequest(HttpMethod method, string path, string content = null, List<string> headers = null, List<string> paramsValues = null, string mediaType= "application/json")
+        public async Task<HttpResponseMessage> SendRequest(HttpMethod method, string path, string content = null, List<string> headers = null, List<string> paramsValues = null, string mediaType= "application/json")
         {
             AddParamsValuesToPath(ref path, ref paramsValues);
             HttpRequestMessage request = new HttpRequestMessage(method, basePath + path);
@@ -108,8 +108,8 @@ namespace NGM_Client
                 );//CreateStringContent(ref contentValues)
 
             HttpResponseMessage response = await httpClient.SendAsync(request);
-            string res = await response.Content.ReadAsStringAsync();
-            return res;
+            //string res = await response.Content.ReadAsStringAsync();
+            return response;
 
         }
 

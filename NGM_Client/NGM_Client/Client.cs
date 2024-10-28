@@ -113,20 +113,20 @@ namespace NGM_Client
         public async Task<string> AddToChat(string chatId, string otherUserId)
         {
 
-            string data = (await client.SendRequest(HttpMethod.Patch, "chat/addusertochat", null, null, new List<string> {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "chat/addusertochat", null, null, new List<string> {
                     "CHAT_ID", chatId,
-                "OTHER_USER_ID", otherUserId })).StatusCode.ToString();
+                "OTHER_USER_ID", otherUserId }));
 
-            return data;
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
         public async Task<string> DeleteFromChat(string chatId, string otherUserId)
         {
 
-            string data = (await client.SendRequest(HttpMethod.Delete, "chat/deluserfromchat", null, null, new List<string> {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chat/deluserfromchat", null, null, new List<string> {
                     "CHAT_ID", chatId,
-                "OTHER_USER_ID", otherUserId })).StatusCode.ToString();
+                "OTHER_USER_ID", otherUserId }));
 
-            return data;
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
 
 
@@ -153,19 +153,20 @@ namespace NGM_Client
         public async Task<string> DeleteMessage(string msgId)
         {
 
-            string data = (await client.SendRequest(HttpMethod.Delete, "messages/delmsg", null, null, new List<string> {
-                    "MSG_ID", msgId })).StatusCode.ToString();
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "messages/delmsg", null, null, new List<string> {
+                    "MSG_ID", msgId }));
 
-            return data;
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
 
         public async Task<string> ModifyMessage(string msgId, string newContent)
         {
 
-            string data = (await client.SendRequest(HttpMethod.Patch, "messages/modifmsg", null, null, new List<string> {
-                    "MSG_ID", msgId })).StatusCode.ToString();
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "messages/modifmsg", null, null, new List<string> {
+                    "MSG_ID", msgId,
+            "NEW_CONTENT", newContent}));
 
-            return data;
+            return data.StatusCode.ToString()+" "+await data.Content.ReadAsStringAsync();
         }
 
     }

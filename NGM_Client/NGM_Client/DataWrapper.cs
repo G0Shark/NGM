@@ -88,7 +88,7 @@ namespace NGM_Client
 
 
             byte[] hashValue = SHA256.HashData(messageBytes); 
-            Console.WriteLine(Convert.ToHexString(hashValue));
+            //Console.WriteLine(Convert.ToHexString(hashValue));
 
             return Convert.ToHexString(hashValue);
         }

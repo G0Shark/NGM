@@ -169,7 +169,7 @@ namespace NGM_Client
                     try
                     {
 
-                        if (voiceUsers[_username].GetAudioBufferStream().BufferedBytes >= 6400)
+                        if (voiceUsers[_username].GetAudioBufferStream().BufferedBytes >= 4800*4)
                             voiceUsers[_username].GetAudioBufferStream().ClearBuffer();
 
 

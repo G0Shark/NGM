@@ -39,7 +39,9 @@ namespace NGM_Client
             sw.Stop();
             return sw.Elapsed.Milliseconds;
         }
-        
+
+
+        //UserController
         public async Task<User> Login()
         {
             User user = null;
@@ -74,7 +76,7 @@ namespace NGM_Client
         }
 
 
-
+        //ChatController
         public async Task<Chat[]> GetChats()
         {
             Chat[] channels=null;
@@ -130,7 +132,7 @@ namespace NGM_Client
         }
 
 
-
+        //MessageController
         public async Task<Message[]> GetMessages(string chatId)
         {
             Message[] messages = null;
@@ -169,5 +171,14 @@ namespace NGM_Client
             return data.StatusCode.ToString()+" "+await data.Content.ReadAsStringAsync();
         }
 
+        //PartnershipController
+        public async Task<string> MakeNewPartnership(string otherUserId)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "partnership/MkNewPartnership", null, null, new List<string> {
+                    "OTHER_USER_ID", otherUserId}));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
     }
 }

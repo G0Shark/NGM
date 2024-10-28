@@ -16,10 +16,11 @@ using System.Security.Cryptography;
 
 namespace NGM_Client
 {
+    
     class SignalRVoiceChat
     {
 
-        class VoiceUser
+        protected class VoiceUser
         {
              BufferedWaveProvider audioBufferStream;
              WaveOutEvent netAudioOutput;
@@ -61,14 +62,14 @@ namespace NGM_Client
             }
         };
 
-        HubConnection hubConnectionVoice;
+        protected HubConnection hubConnectionVoice;
 
-        WaveInEvent micInput;
+        protected WaveInEvent micInput;
 
-        string basePath;
-        string userId = "-1";
-        string username, password;
-        string channelId;
+        protected string basePath;
+        protected string userId = "-1";
+        protected string username, password;
+        protected string channelId;
 
         DataWrapper dw;
 
@@ -164,22 +165,7 @@ namespace NGM_Client
             });
             hubConnectionVoice.On<string, byte[]>("ReceiveVoice", async (_username, data) =>
             {
-                if (username == _username) return;
-                if (voiceUsers.ContainsKey(_username))
-                    try
-                    {
-
-                        if (voiceUsers[_username].GetAudioBufferStream().BufferedBytes >= 4800*4)
-                            voiceUsers[_username].GetAudioBufferStream().ClearBuffer();
-
-
-                        byte[] decompressedData = voiceUsers[_username].Getdw().Decode(data);// 
-                        voiceUsers[_username].GetAudioBufferStream().AddSamples(decompressedData, 0, decompressedData.Length);
-
-                    }
-                    catch (Exception ex) { Console.WriteLine(ex.Message); }
-                else { AddVoiceUser(_username); }
-
+                OnReceiveVoice(_username, data);
             });
 
 
@@ -197,6 +183,24 @@ namespace NGM_Client
             return "connected";
         }
 
+        public void OnReceiveVoice(string _username, byte[]  data)
+        {
+            if (username == _username) return;
+            if (voiceUsers.ContainsKey(_username))
+                try
+                {
+
+                    if (voiceUsers[_username].GetAudioBufferStream().BufferedBytes >= 4800 * 4)
+                        voiceUsers[_username].GetAudioBufferStream().ClearBuffer();
+
+
+                    byte[] decompressedData = voiceUsers[_username].Getdw().Decode(data);// 
+                    voiceUsers[_username].GetAudioBufferStream().AddSamples(decompressedData, 0, decompressedData.Length);
+
+                }
+                catch (Exception ex) { Console.WriteLine(ex.Message); }
+            else { AddVoiceUser(_username); }
+        }
 
         public async Task LeaveVoiceChat()
         {

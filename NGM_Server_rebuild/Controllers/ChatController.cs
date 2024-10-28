@@ -11,31 +11,31 @@ public class ChatController : Controller
 {
     //Удаление пользователя из чата
     [HttpDelete(Path.DeleteFromChat)]
-    public ActionResult DeleteFromChat(string chatId, string userId)
+    public ActionResult DeleteFromChat(string CHAT_ID, string OTHER_USER_ID)
     {
         try
         {
             if (Secure.IsValidHeader(Request, out string username, out string password))
             {
-                if (Permissions.CheckForPermissions(Permission.CHAT_DELPEOPLE, username, password, chatId))
+                if (Permissions.CheckForPermissions(Permission.CHAT_DELPEOPLE, username, password, CHAT_ID))
                 {
                     using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
                     using (MySqlCommand cmd = new MySqlCommand("DELETE FROM `chatmembers` WHERE `userId` = @uid AND `chatId` = @cid", conn))
                     {
-                        cmd.Parameters.AddWithValue("@uid", userId);
-                        cmd.Parameters.AddWithValue("@cid", chatId);
+                        cmd.Parameters.AddWithValue("@uid", OTHER_USER_ID);
+                        cmd.Parameters.AddWithValue("@cid", CHAT_ID);
                     }
 
                     using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
                     using (MySqlCommand cmd = new MySqlCommand("DELETE FROM `permissions` WHERE `userId` = @uid AND `chatId` = @cid", conn)) 
                     {
-                        cmd.Parameters.AddWithValue("@uid", userId);
-                        cmd.Parameters.AddWithValue("@cid", chatId);
+                        cmd.Parameters.AddWithValue("@uid", OTHER_USER_ID);
+                        cmd.Parameters.AddWithValue("@cid", CHAT_ID);
                     }
 
                     return Ok();
                 }
-                return Unauthorized("Нет прав");
+                return Unauthorized("Фемка.");
             }
             return BadRequest("bad header");
         }
@@ -47,25 +47,27 @@ public class ChatController : Controller
     
     //Добавление пользователя в чат
     [HttpPatch(Path.AddToChat)]
-    public ActionResult AddToChat(string chatid, string other_id)
+    public ActionResult AddToChat(string CHAT_ID, string OTHER_USER_ID)
     {
         try
         {
             if (Secure.IsValidHeader(Request, out string username, out string password))
             {
-                if (Permissions.CheckForPermissions(Permission.CHAT_ADDPEOPLE, username, password, chatid))
+                if (Permissions.CheckForPermissions(Permission.CHAT_ADDPEOPLE, username, password, CHAT_ID))
                 {
                     using(MySqlConnection c = new MySqlConnection(gb.dbconn))
                     using (MySqlCommand cmd = new MySqlCommand("INSERT INTO `chatmembers`(`chatId`, `userId`) VALUES (@cid,@uid)", c))
                     {
-                        cmd.Parameters.AddWithValue("@cid", chatid);
-                        cmd.Parameters.AddWithValue("@uid", other_id);
+                        cmd.Parameters.AddWithValue("@cid", CHAT_ID);
+                        cmd.Parameters.AddWithValue("@uid", OTHER_USER_ID);
                         
+                        c.Open();
                         cmd.ExecuteNonQuery();
+                        c.Close();
                         return Ok();
                     }
                 }
-                return Unauthorized("Нет прав");
+                return Unauthorized("Фемка.");
             }
             return BadRequest("bad header");
         }
@@ -77,11 +79,11 @@ public class ChatController : Controller
     
     //Создание чата и авто-добавление создателя в пользователей чата
     [HttpPost(Path.CreateChat)]
-    public ActionResult CreateChat(string channelName, string channelDescription, string channelType)
+    public ActionResult CreateChat(string CHAT_NAME, string CHAT_DESCRIPTION, string CHAT_TYPE)
     {
         try
         {
-            if (channelType.ToLower() != "dm" || channelType.ToLower() != "voice" || channelType.ToLower() != "text")
+            if (CHAT_TYPE.ToLower() != "dm" && CHAT_TYPE.ToLower() != "voice" && CHAT_TYPE.ToLower() != "text")
             {
                 return BadRequest("Неправильный вид канала");
             }
@@ -92,61 +94,75 @@ public class ChatController : Controller
                     return Unauthorized("Неверный логин\\пароль.");
                 }
 
-                if (channelName == "" && channelType == "")
+                if (CHAT_NAME == "" && CHAT_TYPE == "")
                 {
                     return BadRequest("channelName или channelType не указаны.");
                 }
 
-                Channel c = new Channel();
+                Chat c = new Chat();
 
-                MySqlConnection conn = new MySqlConnection(gb.dbconn);
-                conn.Open();
+                using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
                 using (MySqlCommand cmd =
                        new MySqlCommand(
                            "INSERT INTO `chats`(`channelName`, `channelDescription`, `type`) VALUES (@cn,@cd,@ct)",
                            conn))
                 {
-                    cmd.Parameters.AddWithValue("@cn", channelName);
-                    cmd.Parameters.AddWithValue("@cd", channelDescription);
-                    cmd.Parameters.AddWithValue("@ct", channelType);
+                    cmd.Parameters.AddWithValue("@cn", CHAT_NAME);
+                    cmd.Parameters.AddWithValue("@cd", CHAT_DESCRIPTION);
+                    cmd.Parameters.AddWithValue("@ct", CHAT_TYPE);
+                    
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                    conn.Close();
+                }
 
+                using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
+                using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `chats` WHERE `channelName` = @cn", conn))
+                {
+                    cmd.Parameters.AddWithValue("@cn", CHAT_NAME);
+                    conn.Open();
                     using (MySqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            c = new Channel
+                            c = new Chat
                             {
-                                Id = reader[0].ToString() ?? "null",
+                                id = reader[0].ToString() ?? "null",
                                 channelName = reader[1].ToString() ?? "null",
                                 channelDescription = reader[2].ToString() ?? "null",
                                 channelType = reader[3].ToString() ?? "null"
                             };
                         }
                     }
+                    conn.Close();
                 }
 
                 User u = Secure.GetUser(username, password);
                 
+                using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
                 using (MySqlCommand cmd =
                        new MySqlCommand("INSERT INTO `chatmembers`( `chatId`, `userId`) VALUES (@cid,@uid)", conn))
                 {
-                    cmd.Parameters.AddWithValue("@cid", c.Id);
+                    cmd.Parameters.AddWithValue("@cid", c.id);
                     cmd.Parameters.AddWithValue("@uid", u.id);
                     
+                    conn.Open();
                     cmd.ExecuteNonQuery();
+                    conn.Close();
                 }
                 
+                using (MySqlConnection conn = new MySqlConnection(gb.dbconn))
                 using (MySqlCommand cmd =
                        new MySqlCommand("INSERT INTO `permissions`(`userId`, `chatId`, `PermissionType`) VALUES (@uid,@cid,@permType)", conn))
                 {
-                    cmd.Parameters.AddWithValue("@cid", c.Id);
+                    cmd.Parameters.AddWithValue("@cid", c.id);
                     cmd.Parameters.AddWithValue("@uid", u.id);
-                    cmd.Parameters.AddWithValue("@permType", channelType.ToUpper());
+                    cmd.Parameters.AddWithValue("@permType", CHAT_TYPE.ToUpper());
                     
+                    conn.Open();
                     cmd.ExecuteNonQuery();
+                    conn.Close();
                 }
-
-                conn.Close();
                 return Ok(c);
             }
 
@@ -154,7 +170,7 @@ public class ChatController : Controller
         }
         catch (Exception ex)
         {
-            return Conflict(ex.Message);
+            return Conflict(ex.TargetSite+ex.StackTrace+ex.InnerException+ex.HelpLink+ex.Source+ex.Message);
         }
     }
     
@@ -182,7 +198,7 @@ public class ChatController : Controller
                     c.Close();
             
                 }
-                List<Channel> channelList = new List<Channel>();
+                List<Chat> channelList = new List<Chat>();
                 foreach (string cid in chatList)
                 {
                     using (MySqlConnection c = new MySqlConnection(gb.dbconn))
@@ -194,9 +210,9 @@ public class ChatController : Controller
                         {
                             while (reader.Read())
                             {
-                                channelList.Add(new Channel
+                                channelList.Add(new Chat
                                 {
-                                    Id = reader[0].ToString(),
+                                    id = reader[0].ToString(),
                                     channelName = reader[1].ToString(),
                                     channelDescription = reader[2].ToString(),
                                     channelType = reader[3].ToString()

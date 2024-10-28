@@ -11,39 +11,43 @@ public class MessageController : Controller
 {
     //Модифицировать сообщение
     [HttpPatch(Path.ModifyMessage)]
-    public ActionResult ModifyMessage(string msgId, string newContent)
+    public ActionResult ModifyMessage(string MSG_ID, string NEW_CONTENT)
     {
         try
         {
             if (Secure.IsValidHeader(Request, out string username, out string password))
             {
-                if (IsOwnMessage(msgId, Secure.GetUser(username, password).id))
+                if (IsOwnMessage(MSG_ID, Secure.GetUser(username, password).id))
                 {
                     using (MySqlConnection c = new MySqlConnection(gb.dbconn))
                     using (MySqlCommand cmd = new MySqlCommand("UPDATE `messages` SET `content`= @content WHERE `messageId` = @mid", c))
                     {
-                        cmd.Parameters.AddWithValue("@content", newContent);
-                        cmd.Parameters.AddWithValue("@mid", msgId);
+                        cmd.Parameters.AddWithValue("@content", NEW_CONTENT);
+                        cmd.Parameters.AddWithValue("@mid", MSG_ID);
                         
+                        c.Open();
                         cmd.ExecuteNonQuery();
+                        c.Close();
                         return Ok();
                     }
                 }
 
-                if (Permissions.CheckForPermissions(Permission.CHANGE, username, password, GetChatIdByMessage(msgId)))
+                if (Permissions.CheckForPermissions(Permission.CHANGE, username, password, GetChatIdByMessage(MSG_ID)))
                 {
                     using (MySqlConnection c = new MySqlConnection(gb.dbconn))
                     using (MySqlCommand cmd = new MySqlCommand("UPDATE `messages` SET `content`= @content WHERE `messageId` = @mid", c))
                     {
-                        cmd.Parameters.AddWithValue("@content", newContent);
-                        cmd.Parameters.AddWithValue("@mid", msgId);
+                        cmd.Parameters.AddWithValue("@content", NEW_CONTENT);
+                        cmd.Parameters.AddWithValue("@mid", MSG_ID);
                         
+                        c.Open();
                         cmd.ExecuteNonQuery();
+                        c.Close();
                         return Ok();
                     }
                 }
                 
-                return Unauthorized("Нет прав");
+                return Unauthorized("Фемка.");
             }
             return BadRequest("BAD_HEADER");
         }
@@ -55,7 +59,7 @@ public class MessageController : Controller
     
     //Удаление сообщений
     [HttpDelete(Path.DeleteMessage)]
-    public ActionResult DeleteMessage(string msg_id)
+    public ActionResult DeleteMessage(string MSG_ID)
     {
         try
         {
@@ -63,17 +67,19 @@ public class MessageController : Controller
             {
                 if (!Secure.TryLogin(username, password)) { return Unauthorized("Логин\\Пароль неверны"); }
 
-                if (Permissions.CheckForPermissions(Permission.DELETE, username, password, GetChatIdByMessage(msg_id)))
+                if (Permissions.CheckForPermissions(Permission.DELETE, username, password, GetChatIdByMessage(MSG_ID)))
                 {
                     using (MySqlConnection c = new MySqlConnection(gb.dbconn))
                     using (MySqlCommand cmd = new MySqlCommand("DELETE FROM `messages` WHERE `messageId` = @mid", c))
                     {
-                        cmd.Parameters.Add(new MySqlParameter("@mid", msg_id));
+                        cmd.Parameters.Add(new MySqlParameter("@mid", MSG_ID));
+                        c.Open();
                         cmd.ExecuteNonQuery();
+                        c.Close();
                         return Ok();
                     }
                 }
-                return Unauthorized("Нет прав");
+                return Unauthorized("Фемка.");
             }
             return BadRequest("No AUTH_HEADER");
         }
@@ -85,7 +91,7 @@ public class MessageController : Controller
     
     //Получить все сообщения с чата
     [HttpGet(Path.GetMessages)]
-    public ActionResult<List<Message>> GetMessages(string chatId)
+    public ActionResult<List<Message>> GetMessages(string CHAT_ID)
     {
         try
         {
@@ -95,9 +101,9 @@ public class MessageController : Controller
             if (Request.Headers.TryGetValue("Username", out var uname) &&
                 Request.Headers.TryGetValue("Password", out var psd))
             {
-                if (!Permissions.IsUserInChat(uname, psd, chatId))
+                if (!Permissions.IsUserInChat(uname, psd, CHAT_ID))
                 {
-                    return Unauthorized("Нет прав");
+                    return Unauthorized("Фемка.");
                 }
             }
             else
@@ -107,7 +113,7 @@ public class MessageController : Controller
 
             using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `messages` WHERE `chatId` = @cid", conn))
             {
-                cmd.Parameters.AddWithValue("@cid", chatId);
+                cmd.Parameters.AddWithValue("@cid", CHAT_ID);
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())

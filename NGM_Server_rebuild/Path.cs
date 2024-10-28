@@ -34,4 +34,5 @@ public static class Path
     
     //PartnershipController
     public const string MainPartnershipController = MainAPI + "/partnership";
+    public const string MakeNewPartnership = "MkNewPartnership"; //POST with AUTH_HEADER and OTHER_USER_ID arg || returns errors\ok
 }

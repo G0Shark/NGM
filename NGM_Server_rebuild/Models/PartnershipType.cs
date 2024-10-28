@@ -1,0 +1,11 @@
+﻿namespace NGM_Server_rebuild.Models;
+
+public enum PartnershipType
+{
+    PARTNERSHIP_NULL,
+    PARTNERSHIP_NONE,
+    PARTNERSHIP_PENDING_IN,
+    PARTNERSHIP_PENDING_OUT,
+    PARTNERSHIP_FRIEND,
+    PARTNERSHIP_BLACKLIST
+}

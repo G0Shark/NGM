@@ -21,9 +21,19 @@ namespace NGM_Client
             Console.WriteLine("Password: ");
             password = DataWrapper.GetHashString(Console.ReadLine());
 
+
             Client client = new Client(username, password);
 
-
+            try
+            {
+                User user = (await client.Login());
+                Console.WriteLine(user.id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            
 
 
             /*await client.ConnectToTextChat(new List<string>(){ chatId });
@@ -66,7 +76,7 @@ namespace NGM_Client
                             tmp.Add("DisplayName", "");
 
 
-                            res = await client.GetWClient().SendRequest(HttpMethod.Post, "auth/register", tmp.ToString(), null);//
+                            res = (await client.Register(tmp)).id;//
                             Console.WriteLine(res);
                         }
                         break;
@@ -74,8 +84,8 @@ namespace NGM_Client
                         Console.WriteLine(await client.GetPing());
                         break;
                     case "test":
-                        Chat ch = await client.CteateChats("test");
-                        Console.WriteLine(ch.id);
+                        string _res = await client.MakeNewPartnership("18");
+                        Console.WriteLine(_res);
                         break;
                 }
             }

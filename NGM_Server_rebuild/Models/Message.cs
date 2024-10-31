@@ -2,6 +2,7 @@
 
 public class Message
 {
+    public bool isDM { get; set; }
     public string id { get; set; }
     public string chatId { get; set; }
     public string senderId { get; set; }

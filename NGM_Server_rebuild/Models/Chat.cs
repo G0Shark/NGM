@@ -6,4 +6,5 @@ public class Chat
     public string channelName { get; set; }
     public string channelDescription { get; set; }
     public string channelType { get; set; }
+    public string serverId { get; set; }
 }

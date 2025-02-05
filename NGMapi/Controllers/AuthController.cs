@@ -5,14 +5,14 @@ using NGM_Server_rebuild.Services;
 namespace NGM_Server_rebuild.Controllers;
 
 [ApiController]
-public class AuthController
+public class AuthController : ControllerBase
 {
     [HttpPost("api/auth/login")]
     public ActionResult Login(string USERNAME, string PASSWORD)
     {
         try
         {
-            Services.AuthService.Login(USERNAME, PASSWORD);
+            AuthService.TryLogin(Request);
         }
         catch (NGMServiceExeption e)
         {

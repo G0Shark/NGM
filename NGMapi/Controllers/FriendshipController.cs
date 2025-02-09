@@ -22,10 +22,12 @@ public class FriendshipController : ControllerBase
             {
                 return new BadRequestObjectResult("Нельзя отправить запрос самому себе");
             }
-            if (AuthService.IsUserExists(RECEIVERID))
+            /*
+             * if (AuthService.IsUserExists(RECEIVERID))
             {
                 return new BadRequestObjectResult("Пользователя не существует");
             }
+            */
             
             if (!FriendshipService.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipService.IsFriendshipExists(RECEIVERID, SENDERID))
             {
@@ -91,10 +93,6 @@ public class FriendshipController : ControllerBase
         {
             return e.Res;
         }
-        
-        return new ConflictObjectResult("Это сообщения не должно было произойти!" +
-                                        "\n Произошла неизведанная ошибка, из-за чего бэк вернул 0.\n" +
-                                        " Обратитесь к G0Shark_ с информацией что ты сделали для получения этой ошибки.");
     }
 
     [HttpPost("api/friendship/block")]

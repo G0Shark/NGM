@@ -141,8 +141,6 @@ public static class FriendshipService
 
     public static void MakeFriendship(int SENDERID, int ACCEPTERID, int STATE)
     {
-        Console.WriteLine(SENDERID + " | " + ACCEPTERID + " | " + STATE);
-        
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
             connection.Open();

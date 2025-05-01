@@ -21,7 +21,7 @@ namespace NGM_Client
             username = _username;
             password = _password;
             client = new WClient(_username, _password);
-            client.SetAuthorizationHeader(username,password);
+            client.SetAuthorizationHeader("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password)));
         }
 
         //getters
@@ -45,7 +45,7 @@ namespace NGM_Client
         public async Task<User> Login()
         {
             User user = null;
-            string data = await (await client.SendRequest(HttpMethod.Post, "auth/login")).Content.ReadAsStringAsync();
+            string data = await (await client.SendRequest(HttpMethod.Get, "auth/login")).Content.ReadAsStringAsync();
             //Console.WriteLine(data);
             try
             {
@@ -59,20 +59,20 @@ namespace NGM_Client
             return user;
         }
 
-        public async Task<User> Register(JsonObject jo)
+        public async Task<string> Register(string[] paramsValues)
         {
             User user = null;
-            string data = await (await client.SendRequest(HttpMethod.Post, "auth/register", jo.ToString(), null)).Content.ReadAsStringAsync();
-            try
+            string data = await (await client.SendRequest(HttpMethod.Post, "auth/register", null, null, paramsValues)).Content.ReadAsStringAsync();
+            /*try
             {
                 user = JsonSerializer.Deserialize<User>(data);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(data);
-            }
+            }*/
 
-            return user;
+            return data;
         }
 
 
@@ -96,7 +96,7 @@ namespace NGM_Client
         {
             Chat channel = null;
 
-            string data = await (await client.SendRequest(HttpMethod.Post, "chat/createchat", null, null, new List<string> {
+            string data = await (await client.SendRequest(HttpMethod.Post, "chat/createchat", null, null, new string[] {
                     "CHAT_NAME", chatName,
                 "CHAT_DESCRIPTION", chatDescription ,
                 "CHAT_TYPE", chatType})).Content.ReadAsStringAsync();
@@ -115,7 +115,7 @@ namespace NGM_Client
         public async Task<string> AddToChat(string chatId, string otherUserId)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "chat/addusertochat", null, null, new List<string> {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "chat/addusertochat", null, null, new string[] {
                     "CHAT_ID", chatId,
                 "OTHER_USER_ID", otherUserId }));
 
@@ -124,7 +124,7 @@ namespace NGM_Client
         public async Task<string> DeleteFromChat(string chatId, string otherUserId)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chat/deluserfromchat", null, null, new List<string> {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chat/deluserfromchat", null, null, new string[] {
                     "CHAT_ID", chatId,
                 "OTHER_USER_ID", otherUserId }));
 
@@ -133,12 +133,12 @@ namespace NGM_Client
 
 
         //MessageController
-        public async Task<Message[]> GetMessages(string chatId)
+        public async Task<Message[]> GetMessages(string chatId, bool dmChat)
         {
             Message[] messages = null;
 
-            string data = await(await client.SendRequest(HttpMethod.Get, "messages/messagesfromchat", null, null, new List<string> {
-                    "CHAT_ID", chatId })).Content.ReadAsStringAsync();
+            string data = await(await client.SendRequest(HttpMethod.Get, "messages/get", null, null, [
+                    "ID", chatId, "DMCHAT",  dmChat?"true":"false"])).Content.ReadAsStringAsync();
 
             try
             {
@@ -152,31 +152,13 @@ namespace NGM_Client
             return messages;
         }
 
-        public async Task<string> DeleteMessage(string msgId)
-        {
-
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "messages/delmsg", null, null, new List<string> {
-                    "MSG_ID", msgId }));
-
-            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
-        }
-
-        public async Task<string> ModifyMessage(string msgId, string newContent)
-        {
-
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "messages/modifmsg", null, null, new List<string> {
-                    "MSG_ID", msgId,
-            "NEW_CONTENT", newContent}));
-
-            return data.StatusCode.ToString()+" "+await data.Content.ReadAsStringAsync();
-        }
 
         //PartnershipController
-        public async Task<string> MakeNewPartnership(string otherUserId)
+        public async Task<string> FriendshipAction(FriendshipActions action, string otherUserId)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "partnership/MkNewPartnership", null, null, new List<string> {
-                    "OTHER_USER_ID", otherUserId}));
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "friendship/"+ action, null, null, [
+                    "RECEIVERID", otherUserId]));
 
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }

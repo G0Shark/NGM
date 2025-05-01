@@ -18,25 +18,73 @@ namespace NGM_Client
             string username, password;
             Console.WriteLine("Username: ");
             username =  Console.ReadLine();
-            Console.WriteLine("Password: ");
+            //Console.WriteLine("Password: ");
             password = DataWrapper.GetHashString(Console.ReadLine());
 
 
             Client client = new Client(username, password);
 
-            try
+
+            string res;
+            string[] com = { "" };
+            while (com[0] != "exit")
             {
-                User user = (await client.Login());
-                Console.WriteLine(user.id);
+                com = Console.ReadLine().Split();
+
+                switch (com[0])
+                {
+                    case "login":
+                        {
+                            try
+                            {
+                                User user = (await client.Login());
+                                Console.WriteLine(user.id);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
+                        }
+                        break;
+                    case "register":
+                        {
+                            res = (await client.Register(["DESCRIPTION", "Oleg", 
+                                "USERNAME", username, 
+                                "PASSWORD", password, 
+                                "EMAIL", "omegadroid@yandex.com", 
+                                "DISPLAYNAME", username]));//
+                            Console.WriteLine(res);
+                        }
+                        break;
+                    case "get_messages":
+                        Message[] messages = await client.GetMessages(com[1],false);
+                        Console.WriteLine(messages[0].message);
+                        break;
+                    case "makeship":
+                        res = await client.FriendshipAction(FriendshipActions.make, com[1]);
+                        Console.WriteLine(res);
+                        break;
+                    case "sendreq":
+                        res = await client.FriendshipAction(FriendshipActions.sendreq, com[1]);
+                        Console.WriteLine(res);
+                        break;
+                    case "blockship":
+                        res = await client.FriendshipAction(FriendshipActions.block, com[1]);
+                        Console.WriteLine(res);
+                        break;
+                    case "unblockship":
+                        res = await client.FriendshipAction(FriendshipActions.unblock, com[1]);
+                        Console.WriteLine(res);
+                        break;
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
+
+
+            
             
 
-
-            /*await client.ConnectToTextChat(new List<string>(){ chatId });
+            /*
+            await client.ConnectToTextChat(new List<string>(){ chatId });
             string mes = "";
             do
             {
@@ -44,12 +92,14 @@ namespace NGM_Client
                 await client.SendToTextChat(chatId,mes);
             }
             while (mes != "exit");
-            await client.LeaveTextChat();*/
+            await client.LeaveTextChat();//*/
 
 
 
 
             //Console.WriteLine(await client.VoiceChat().ConnectToVoiceChat("1"));
+
+            /*
             string res;
             string[] com = {""};
             while (com[0]!="exit")
@@ -91,7 +141,7 @@ namespace NGM_Client
             }
 
             await client.GetWClient().VoiceChat().LeaveVoiceChat();
-                        
+            */
 
             
 

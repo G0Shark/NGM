@@ -56,15 +56,15 @@ namespace NGM_Client
             content += "}";
             return content;
         }
-        void AddHeadersToRequest(ref HttpRequestMessage request, ref List<string> headers)
+        void AddHeadersToRequest(ref HttpRequestMessage request, string[] headers)
         {
             if (headers != null)
-                for (int i = 0; i < headers.Count; i += 2) request.Headers.Add(headers[i], headers[i + 1]);
+                for (int i = 0; i < headers.Length; i += 2) request.Headers.Add(headers[i], headers[i + 1]);
         }
-        void AddParamsValuesToPath(ref string path, ref List<string> values)
+        void AddParamsValuesToPath(ref string path, string[] values)
         {
             if (values != null)
-                for (int i = 0; i < values.Count; i += 2) path += (i == 0 ? "?" : "&") + values[i] + "=" + values[i + 1];
+                for (int i = 0; i < values.Length; i += 2) path += (i == 0 ? "?" : "&") + values[i] + "=" + values[i + 1];
         }
 
         //getters
@@ -87,15 +87,16 @@ namespace NGM_Client
         public void SetAuthorizationHeader(string scheme, string parameter)
         {
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, parameter);
+            //Console.WriteLine(httpClient.DefaultRequestHeaders.Authorization);
         }
 
         //public
 
-        public async Task<HttpResponseMessage> SendRequest(HttpMethod method, string path, string content = null, List<string> headers = null, List<string> paramsValues = null, string mediaType= "application/json")
+        public async Task<HttpResponseMessage> SendRequest(HttpMethod method, string path, string content = null, string[] headers = null, string[] paramsValues = null, string mediaType= "application/json")
         {
-            AddParamsValuesToPath(ref path, ref paramsValues);
+            AddParamsValuesToPath(ref path, paramsValues);
             HttpRequestMessage request = new HttpRequestMessage(method, basePath + path);
-            AddHeadersToRequest(ref request, ref headers);
+            AddHeadersToRequest(ref request, headers);
 
 
 

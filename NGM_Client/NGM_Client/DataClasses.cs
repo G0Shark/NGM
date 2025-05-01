@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Google.Protobuf.WellKnownTypes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,12 +16,12 @@ namespace NGM_Client
     }
     public class Message
     {
-        public string id { get; set; }
-        public string chatId { get; set; }
-        public string senderId { get; set; }
-        public string time { get; set; }
-        public string content { get; set; }
-        public string answeringMessageId { get; set; }
+        public int id { get; set; }
+        public int chatid { get; set; }
+        public string message { get; set; }
+        public int replyforid { get; set; }
+        public Timestamp timestamp { get; set; }
+        public bool dmchat { get; set; }
     }
     public enum Permission
     {
@@ -38,12 +39,20 @@ namespace NGM_Client
         VOICE_MUTE = 'j',
         VOICE_KICK = 'k'
     }
+    public enum FriendshipActions
+    {
+        make,
+        sendreq,
+        block,
+        unblock
+    }
     public class User
     {
-        public string id { get; set; }
-        public string Username { get; set; }
-        public string PasswordHash { get; set; }
-        public string Email { get; set; }
-        public string DisplayName { get; set; }
+        public int id { get; set; }
+        public string username { get; set; }
+        public string email { get; set; }
+        public string displayname { get; set; }
+        public string description { get; set; }
     }
+
 }

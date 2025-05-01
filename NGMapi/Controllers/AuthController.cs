@@ -8,11 +8,27 @@ namespace NGM_Server_rebuild.Controllers;
 public class AuthController : ControllerBase
 {
     [HttpPost("api/auth/login")]
-    public ActionResult Login(string USERNAME, string PASSWORD)
+    public ActionResult Login()
     {
         try
         {
             AuthService.TryLogin(Request);
+            return Ok("Вход успешен");
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+
+        return new ConflictObjectResult("Это сообщения не должно было произойти!\n Произошла неизведанная ошибка, из-за чего бэк вернул 0.\n Обратитесь к G0Shark_ с информацией что ты сделали для получения этой ошибки.");
+    }
+    
+    [HttpGet("api/auth/login")]
+    public ActionResult LoginWithUserReturn()
+    {
+        try
+        {
+            return new OkObjectResult(AuthService.GetUser(AuthService.TryLogin(Request)));
         }
         catch (NGMServiceExeption e)
         {

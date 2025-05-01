@@ -37,4 +37,30 @@ public static class MembersService
             }
         }
     }
+    
+    public static void Delete(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "DELETE FROM members WHERE ID=@ID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@ID", ID);
+
+                int rowsAffected = insertCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    return;
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
+    
+        
 }

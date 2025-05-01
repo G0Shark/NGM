@@ -25,6 +25,7 @@ public class RolesController : ControllerBase
                 return new BadRequestObjectResult("Уровень иерархии занят");
             }
 
+            //TODO: Пользователи имеют права создавать роли выше своей, плохо
             RolesService.CreateRole(SERVERID, LEVEL, PERMISSIONS, NAME);
             return new OkObjectResult("Роль создана");
         }
@@ -97,6 +98,8 @@ public class RolesController : ControllerBase
                 return new UnauthorizedObjectResult("Нет доступа");
             }
 
+            //TODO: Может менять уровень ролям выше своей
+            
             RolesService.ChangeLevel(ID, LEVEL);
             return new OkResult();
         }

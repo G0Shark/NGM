@@ -32,6 +32,32 @@ public static class FriendshipService
         }
     }
     
+    public static bool IsFriendshipExists(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM friendships WHERE ID = @ID";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+                
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    
     public static bool IsFriendRequest(int SENDERID, int ACCEPTERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))

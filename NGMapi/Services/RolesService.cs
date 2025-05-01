@@ -5,6 +5,73 @@ namespace NGM_Server_rebuild.Services;
 
 public static class RolesService
 {
+    public static Role[] GetRolesOfUser(int USERID, int SERVERID)
+    {
+        List<Role> roles = new List<Role>();
+        string roleIdsString = "";
+            using (var connection = new MySqlConnection(gb.db))
+            {
+                connection.Open();
+
+                var getRoleIdsCmd = new MySqlCommand(
+                    "SELECT ROLEID FROM members WHERE USERID = @USERID AND SERVERID = @SERVERID",
+                    connection);
+                getRoleIdsCmd.Parameters.AddWithValue("@USERID", USERID);
+                getRoleIdsCmd.Parameters.AddWithValue("@SERVERID", SERVERID);
+
+                var result = getRoleIdsCmd.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                    throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не участник сервера"));
+
+                roleIdsString = result.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(roleIdsString))
+                return roles.ToArray();
+            
+            var roleIds = new List<int>();
+            foreach (var part in roleIdsString.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (int.TryParse(part, out var id))
+                    roleIds.Add(id);
+            }
+
+            if (roleIds.Count == 0)
+                return roles.ToArray();
+            
+            using (var connection = new MySqlConnection(gb.db))
+            {
+                connection.Open();
+                var parameters = new List<string>();
+                var cmd = new MySqlCommand();
+                cmd.Connection = connection;
+
+                for (int i = 0; i < roleIds.Count; i++)
+                {
+                    var paramName = "@id" + i;
+                    parameters.Add(paramName);
+                    cmd.Parameters.AddWithValue(paramName, roleIds[i]);
+                }
+
+                var sql = $"SELECT ID, NAME, LEVEL, PERMISSIONS FROM roles WHERE ID IN ({string.Join(", ", parameters)})";
+                cmd.CommandText = sql;
+
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    roles.Add(new Role
+                    {
+                        ID = reader.GetInt32("ID"),
+                        SERVERID = reader.GetInt32("SERVERID"),
+                        LEVEL = reader.GetInt32("LEVEL"),
+                        PERMISSIONS = reader.GetString("PERMISSIONS"),
+                        NAME = reader.GetString("NAME"),
+                    });
+                }
+            }
+
+            return roles.ToArray();
+    }
     public static bool IsLevelExists(int SERVERID, int LEVEL)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
@@ -181,4 +248,13 @@ public static class RolesService
             }
         }
     }
+}
+
+public class Role
+{
+    public int ID { get; set; }
+    public int SERVERID { get; set; }
+    public int LEVEL { get; set; }
+    public string PERMISSIONS { get; set; }
+    public string NAME { get; set; }
 }

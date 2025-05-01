@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using Object = Mysqlx.Expr.Object;
 
 namespace NGM_Server_rebuild.Services;
 
@@ -201,6 +202,49 @@ public static class AuthService
         }
         
         var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(headerValue.Parameter)).Split(':', 2);
+        
+        if (credentials.Length != 2)
+        {
+            throw new NGMServiceExeption(new UnauthorizedObjectResult("Auth Header неверное кол-во записей"));
+        }
+        
+        var USERNAME = credentials[0];
+        var PASSWORD = credentials[1];
+        
+        if (string.IsNullOrEmpty(USERNAME) || string.IsNullOrEmpty(PASSWORD))
+        {
+            throw new NGMServiceExeption(new BadRequestObjectResult("USERNAME или PASSWORD пусты"));
+        }
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM users WHERE USERNAME = @USERNAME AND PASSWORD = @PASSWORD";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@PASSWORD", PASSWORD);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return USERNAME;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Eroor login with credentials: "+USERNAME + " " + PASSWORD);
+                        throw new NGMServiceExeption(new UnauthorizedObjectResult("Неверные данные для входа"));
+                    }
+                }
+            }
+        }
+    }
+    
+    public static string TryLogin(string Authification)
+    {
+        var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(Authification)).Split(':', 2);
         
         if (credentials.Length != 2)
         {

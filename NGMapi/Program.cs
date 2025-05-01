@@ -3,6 +3,7 @@ using System;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.RateLimiting;
 using MySql.Data.MySqlClient;
 using Mysqlx;
 
@@ -27,6 +28,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
+builder.Services.AddRateLimiter(options => {
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext => RateLimitPartition.GetFixedWindowLimiter(partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(), factory: partition => new FixedWindowRateLimiterOptions
+    {
+        AutoReplenishment = true,
+        PermitLimit = 5,
+        QueueLimit = 0,
+        Window = TimeSpan.FromMinutes(1)
+    }));
+});
+
 
 //Создание приложения на основе конфигуратора
 var app = builder.Build();
@@ -45,6 +56,7 @@ app.MapControllers();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 
 app.MapGet("/api/ping", () =>
 {

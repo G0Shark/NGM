@@ -1,4 +1,5 @@
 ﻿using System.Security;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 
@@ -6,6 +7,143 @@ namespace NGM_Server_rebuild.Services;
 
 public static class ServersService
 {
+    public static bool TryJoinWithPassword(int ID, string JOINPASSWORD)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT VISIBLE FROM servers WHERE ID=@ID AND JOINPASSWORD=@JOINPASSWORD";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@ID", ID);
+                insertCommand.Parameters.AddWithValue("@JOINPASSWORD", JOINPASSWORD);
+
+                using (MySqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    public static bool IsVisible(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT VISIBLE FROM servers WHERE ID=@ID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@ID", ID);
+
+                using (MySqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return reader.GetBoolean(0);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    public static bool IsServerExists(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT * FROM servers WHERE ID=@ID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@ID", ID);
+
+                using (MySqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    
+    public static bool IsServerExists(string NAME)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT * FROM servers WHERE NAME=@NAME";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@NAME", NAME);
+
+                using (MySqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    
+    public static Server GetServer(string NAME)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT * FROM servers WHERE NAME=@NAME";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@NAME", NAME);
+
+                using (MySqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Server
+                        {
+                            ID = reader.GetInt32("ID"),
+                            NAME = reader.GetString("NAME"),
+                            DESCRIPTION = reader.GetString("DESCRIPTION"),
+                            JOINPASSWORD = reader.GetString("JOINPASSWORD"),
+                            VISIBLE = reader.GetBoolean("VISIBLE"),
+                            OWNERID = reader.GetInt32("OWNERID"),
+                            CREATION_DATE = reader.GetDateTime("CREATION_DATE"),
+                        };
+                    }
+                    else
+                    {
+                        throw new NGMServiceExeption(new NotFoundObjectResult("Сервера не существует"));
+                    }
+                }
+            }
+        }
+    }
     
     public static bool IsOwner(int ID, int OWNERID)
     {
@@ -215,4 +353,15 @@ public static class ServersService
             }
         }
     }
+}
+
+public class Server
+{
+    public int ID { get; set; }
+    public string NAME { get; set; }
+    public string DESCRIPTION { get; set; }
+    public string JOINPASSWORD  { get; set; }
+    public bool VISIBLE { get; set; }
+    public int OWNERID { get; set; }
+    public DateTime CREATION_DATE { get; set; }
 }

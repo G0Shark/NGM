@@ -241,6 +241,30 @@ public static class AuthService
             }
         }
     }
+
+    public static void DeleteUser(string USERNAME)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "DELETE FROM users WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+
+                int rowsAffected = checkCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    throw new NGMServiceExeption(new OkObjectResult("Пользователь создан"));
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
     
     public static string TryLogin(string Authification)
     {
@@ -282,6 +306,148 @@ public static class AuthService
                 }
             }
         }
+    }
+    public static void UpdateUsername(string USERNAME, string NEWUSERNAME)
+    {
+        if (IsUserExists(NEWUSERNAME))
+        {
+            throw new NGMServiceExeption(new BadRequestObjectResult("username занят"));
+        }
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "UPDATE users SET USERNAME = @NEWUSERNAME WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@NEWUSERNAME", NEWUSERNAME);
+
+                int rowsAffected = checkCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    throw new NGMServiceExeption(new OkObjectResult("Ваш username изменён"));
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+        throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+    }
+    
+    public static void UpdatePassword(string USERNAME, string PASSWORD)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "UPDATE users SET PASSWORD = @PASSWORD WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@PASSWORD", PASSWORD);
+
+                int rowsAffected = checkCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    throw new NGMServiceExeption(new OkObjectResult("Ваш password изменён"));
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+        throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+    }
+
+    public static void UpdateEmail(string USERNAME, string EMAIL)
+    {
+        if (!IsValidEmail(EMAIL))
+        {
+            throw new NGMServiceExeption(new BadRequestObjectResult("Почта не подходит"));
+        }
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "UPDATE users SET EMAIL = @EMAIL WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@EMAIL", EMAIL);
+
+                int rowsAffected = checkCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    throw new NGMServiceExeption(new OkObjectResult("Ваш email изменён"));
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+
+        throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+    }
+    
+    public static void UpdateDisplayName(string USERNAME, string DESPLAYNAME)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "UPDATE users SET DESPLAYNAME = @DESPLAYNAME WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@DESPLAYNAME", DESPLAYNAME);
+
+                int rowsAffected = checkCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    throw new NGMServiceExeption(new OkObjectResult("Ваш displayname изменён"));
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+
+        throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+    }
+    
+    public static void UpdateDescription(string USERNAME, string DESCRIPTION)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "UPDATE users SET DESCRIPTION = @DESCRIPTION WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@DESCRIPTION", DESCRIPTION);
+
+                int rowsAffected = checkCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    throw new NGMServiceExeption(new OkObjectResult("Ваш description изменён"));
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+
+        throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
     }
 }
 

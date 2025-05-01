@@ -5,6 +5,53 @@ namespace NGM_Server_rebuild.Services;
 
 public static class RolesService
 {
+    public static int GetLevelOfRole(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT LEVEL FROM roles WHERE ID = @ID";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    return reader.GetInt32(0);
+                }
+            }
+        }
+    }
+    public static int UserMaxLevel(int USERID, int SERVERID)
+    {
+        var roles = GetRolesOfUser(USERID, SERVERID);
+        int level = 100000;
+        
+        foreach (var role in roles)
+        {
+            if (role.LEVEL < level)
+            {
+                level = role.LEVEL;
+            }
+        }
+        
+        return level;
+    }
+    public static bool IsUserHavePermission(int USERID, int SERVERID, string PERMISSION)
+    {
+        var roles = GetRolesOfUser(USERID, SERVERID);
+        bool hasPermission = false;
+        
+        foreach (var role in roles)
+        {
+            if (role.PERMISSIONS.Contains(PERMISSION))
+            {
+                hasPermission = true;
+            }
+        }
+        
+        return hasPermission;
+    }
     public static Role[] GetRolesOfUser(int USERID, int SERVERID)
     {
         List<Role> roles = new List<Role>();
@@ -160,6 +207,30 @@ public static class RolesService
             using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
             {
                 insertCommand.Parameters.AddWithValue("@ID", ID);
+
+                int rowsAffected = insertCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    return;
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
+
+    public static void DeleteAllRolesOfServer(int SERVERID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "DELETE FROM roles WHERE SERVERID=@SERVERID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
 
                 int rowsAffected = insertCommand.ExecuteNonQuery();
                 if (rowsAffected > 0)

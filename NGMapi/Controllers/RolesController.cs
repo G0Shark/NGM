@@ -15,17 +15,22 @@ public class RolesController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int ID = AuthService.GetUser(username).ID;
 
-            if (!ServersService.IsOwner(SERVERID, ID))
+            if (!RolesService.IsUserHavePermission(ID, SERVERID, "CREATE_ROLE") ||
+                !ServersService.IsOwner(ID, SERVERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
+            }
+
+            if (LEVEL < RolesService.UserMaxLevel(ID, SERVERID))
+            {
+                return new UnauthorizedObjectResult("Невозможно создать роль выше вашей");
             }
 
             if (RolesService.IsLevelExists(SERVERID, LEVEL))
             {
                 return new BadRequestObjectResult("Уровень иерархии занят");
             }
-
-            //TODO: Пользователи имеют права создавать роли выше своей, плохо
+            
             RolesService.CreateRole(SERVERID, LEVEL, PERMISSIONS, NAME);
             return new OkObjectResult("Роль создана");
         }
@@ -45,10 +50,17 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!ServersService.IsOwner(SERVERID, ID))
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "DELETE_ROLE") ||
+                !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
             }
+
+            if (RolesService.GetLevelOfRole(ID) < RolesService.UserMaxLevel(ID, SERVERID))
+            {
+                return new UnauthorizedObjectResult("Невозможно удалить роль выше вашей");
+            }
+
 
             RolesService.DeleteRole(ID);
             return new OkObjectResult("Роль создана");
@@ -69,13 +81,19 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!ServersService.IsOwner(SERVERID, ID))
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") ||
+                !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
             }
 
+            if (RolesService.GetLevelOfRole(ID) < RolesService.UserMaxLevel(ID, SERVERID))
+            {
+                return new UnauthorizedObjectResult("Невозможно изменить роль выше вашей");
+            }
+
             RolesService.ChangeName(ID, NAME);
-            return new OkResult();
+            return new OkObjectResult("Имя измененно");
         }
         catch (NGMServiceExeption ex)
         {
@@ -93,15 +111,19 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!ServersService.IsOwner(SERVERID, ID))
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") ||
+                !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
             }
 
-            //TODO: Может менять уровень ролям выше своей
+            if (RolesService.GetLevelOfRole(ID) < RolesService.UserMaxLevel(ID, SERVERID))
+            {
+                return new UnauthorizedObjectResult("Невозможно изменить роль выше вашей");
+            }
             
             RolesService.ChangeLevel(ID, LEVEL);
-            return new OkResult();
+            return new OkObjectResult("Уровень роли изменён");
         }
         catch (NGMServiceExeption ex)
         {
@@ -119,13 +141,27 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!ServersService.IsOwner(SERVERID, ID))
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") ||
+                !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
             }
 
+            foreach (var perm in PERMISSIONS.Split(' '))
+            {
+                if (!RolesService.IsUserHavePermission(USERID, SERVERID, perm))
+                {
+                    return new UnauthorizedObjectResult("У вас нет права, которое вы хотите дать");
+                }
+            }
+            
+            if (RolesService.GetLevelOfRole(ID) < RolesService.UserMaxLevel(ID, SERVERID))
+            {
+                return new UnauthorizedObjectResult("Невозможно изменить роль выше вашей");
+            }
+
             RolesService.ChangePermissions(ID, PERMISSIONS);
-            return new OkResult();
+            return new OkObjectResult("Права роли изменены");
         }
         catch (NGMServiceExeption ex)
         {

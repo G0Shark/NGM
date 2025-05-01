@@ -23,6 +23,16 @@ namespace NGM_Client
         public Timestamp timestamp { get; set; }
         public bool dmchat { get; set; }
     }
+    
+    public class User
+    {
+        public int id { get; set; }
+        public string username { get; set; }
+        public string email { get; set; }
+        public string displayname { get; set; }
+        public string description { get; set; }
+    }
+
     public enum Permission
     {
         ALL = 'a',
@@ -46,13 +56,19 @@ namespace NGM_Client
         block,
         unblock
     }
-    public class User
+    public enum RoleParams
     {
-        public int id { get; set; }
-        public string username { get; set; }
-        public string email { get; set; }
-        public string displayname { get; set; }
-        public string description { get; set; }
+        name,
+        level,
+        permission
+    }
+    public enum ServerParams
+    {
+        name,
+        description,
+        ownerid,
+        joinpassword,
+        visible
     }
 
 }

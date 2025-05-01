@@ -76,6 +76,34 @@ namespace NGM_Client
                         res = await client.FriendshipAction(FriendshipActions.unblock, com[1]);
                         Console.WriteLine(res);
                         break;
+
+
+                    case "role_create":
+                        res = await client.RoleCreate(com[1], com[2], com[3], com[4]);
+                        Console.WriteLine(res);
+                        break;
+                    case "role_delete":
+                        res = await client.RoleDelete(com[1]);
+                        Console.WriteLine(res);
+                        break;
+                    case "role_change":
+                        res = await client.RoleChange(com[1], (RoleParams)Enum.Parse(typeof(RoleParams), com[2]), com[3]);
+                        Console.WriteLine(res);
+                        break;
+
+
+                    case "server_create":
+                        res = await client.ServerCreate(com[1], com[2], com[3], true);
+                        Console.WriteLine(res);
+                        break;
+                    case "server_delete":
+                        res = await client.ServerDelete(com[1]);
+                        Console.WriteLine(res);
+                        break;
+                    case "server_change":
+                        res = await client.ServerChange(com[1], (ServerParams)Enum.Parse(typeof(ServerParams), com[2]), com[3]);
+                        Console.WriteLine(res);
+                        break;
                 }
             }
 

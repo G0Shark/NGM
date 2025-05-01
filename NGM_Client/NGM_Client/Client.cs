@@ -162,5 +162,85 @@ namespace NGM_Client
 
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
+
+
+
+
+        public async Task<string> RoleCreate(string serverId, string level, string permission, string name)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "roles/create", null, null, [
+                    "SERVERID", serverId,
+                    "LEVEL", level,
+                    "PERMISSIONS", permission,
+                    "NAME", name,
+
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        public async Task<string> RoleDelete(string id)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "roles/delete", null, null, [
+                    "ID", id
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        
+        public async Task<string> RoleChange(string id, RoleParams param, string value)
+        {
+            string pName = "" + param;
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "roles/"+ param, null, null, [
+                    "ID", id,
+                    pName.ToUpper(), value
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+
+
+
+        public async Task<string> ServerCreate(string name, string description, string joinpassword, bool visible)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "servers/create", null, null, [
+                    "NAME", name,
+                    "DESCRIPTION", description,
+                    "JOINPASSWORD", joinpassword,
+                    "VISIBLE", visible?"true":"false",
+
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        public async Task<string> ServerDelete(string id)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/delete", null, null, [
+                    "ID", id
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+
+        public async Task<string> ServerChange(string id, ServerParams param, string value)
+        {
+            string pName = ""+param;
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "servers/" + param, null, null, [
+                    "ID", id,
+                    pName.ToUpper(), value
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
     }
 }

@@ -133,7 +133,7 @@ namespace NGM_Client
         {
             //Chat channel = null;
 
-            HttpResponseMessage data =  (await client.SendRequest(HttpMethod.Post, "chat/create", null, null, new string[] {
+            HttpResponseMessage data =  (await client.SendRequest(HttpMethod.Post, "chats/create", null, null, new string[] {
                 "SERVERID", serverId,
                     "NAME", chatName,
                 "DESCRIPTION", chatDescription ,
@@ -157,7 +157,7 @@ namespace NGM_Client
         public async Task<string> DeleteChat(string id)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chat/delete", null, null, new string[] {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chats/delete", null, null, new string[] {
                 "ID", id
             }));
 
@@ -167,7 +167,7 @@ namespace NGM_Client
         public async Task<string> AddToChat(string chatId, string otherUserId)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "chat/addusertochat", null, null, new string[] {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "chats/addusertochat", null, null, new string[] {
                     "CHAT_ID", chatId,
                 "OTHER_USER_ID", otherUserId }));
 
@@ -176,7 +176,7 @@ namespace NGM_Client
         public async Task<string> DeleteFromChat(string chatId, string otherUserId)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chat/deluserfromchat", null, null, new string[] {
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chats/deluserfromchat", null, null, new string[] {
                     "CHAT_ID", chatId,
                 "OTHER_USER_ID", otherUserId }));
 
@@ -301,7 +301,7 @@ namespace NGM_Client
         public async Task<string> MemberJoin(string serverId, string joinPassword)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/delete", null, null, [
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "members/join", null, null, [
                     "SERVERID", serverId,
                     "JOINPASSWORD", joinPassword
             ]));
@@ -312,7 +312,7 @@ namespace NGM_Client
         public async Task<string> MemberLeave(string serverId)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/delete", null, null, [
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "members/leave", null, null, [
                     "SERVERID", serverId
             ]));
 
@@ -322,7 +322,7 @@ namespace NGM_Client
         public async Task<string> MemberMute(MuteParams mode, string userId, string serverId, bool value)
         {
 
-            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/"+ mode, null, null, [
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Put, "members/"+ mode, null, null, [
                     "USERID", userId,
                     "SERVERID", serverId,
                     (""+mode).ToUpper(),value?"true":"false"

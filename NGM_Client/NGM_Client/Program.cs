@@ -26,12 +26,132 @@ namespace NGM_Client
 
 
             string res;
-            string[] com = { "" };
+            string[] com = {"","", "", "", "", "", "", "", "", "" };
             while (com[0] != "exit")
             {
-                com = Console.ReadLine().Split();
+                string[] data = Console.ReadLine().Split();
+
+                for (int i = 0; i < data.Length; i++)
+                    com[i] = data[i];
+
+
 
                 switch (com[0])
+                {
+                    case "auth":
+                        switch (com[1])
+                        {
+                            case "login":
+                                {
+                                    try
+                                    {
+                                        User user = (await client.Login());
+                                        Console.WriteLine(user.id);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.ToString());
+                                    }
+                                }
+                                break;
+                            case "register":
+                                {
+                                    res = (await client.Register(["DESCRIPTION", "Oleg",
+                                "USERNAME", username,
+                                "PASSWORD", password,
+                                "EMAIL", "omegadroid@yandex.com",
+                                "DISPLAYNAME", username]));//
+                                    Console.WriteLine(res);
+                                }
+                                break;
+                            case "delete":
+                                res = (await client.Delete());//
+                                Console.WriteLine(res);
+                                break;
+                        }
+                        break;
+
+
+
+                    case "server":
+                        switch (com[1])
+                        {
+                            case "create":
+                                res = await client.ServerCreate(com[2], com[3], com[4], true);
+                                Console.WriteLine(res);
+                                break;
+                            case "delete":
+                                res = await client.ServerDelete(com[2]);
+                                Console.WriteLine(res);
+                                break;
+                            case "change":
+                                res = await client.ServerChange(com[2], (ServerParams)Enum.Parse(typeof(ServerParams), com[3]), com[4]);
+                                Console.WriteLine(res);
+                                break;
+
+                        }
+                        break;
+                    case "member":
+                        switch (com[1])
+                        {
+                            case "join":
+                                res = await client.MemberJoin(com[2], com[3]);
+                                Console.WriteLine(res);
+                                break;
+                            case "leave":
+                                res = await client.MemberLeave(com[2]);
+                                Console.WriteLine(res);
+                                break;
+                            case "mute":
+                                res = await client.MemberMute((MuteParams)Enum.Parse(typeof(MuteParams),com[2]), com[3], com[4], com[5]=="true");
+                                Console.WriteLine(res);
+                                break;
+
+                        }
+                        break;
+
+                    case "roles":
+                        switch (com[1])
+                        {
+                            case "create":
+                                res = await client.RoleCreate(com[2], com[3], com[4], com[5]);
+                                Console.WriteLine(res);
+                                break;
+                            case "delete":
+                                res = await client.RoleDelete(com[2]);
+                                Console.WriteLine(res);
+                                break;
+                            case "change":
+                                res = await client.RoleChange(com[2], (RoleParams)Enum.Parse(typeof(RoleParams), com[3]), com[4]);
+                                Console.WriteLine(res);
+                                break;
+
+                        }
+                        break;
+
+                    case "chats":
+                        switch (com[1])
+                        {
+                            case "create":
+                                res = await client.CteateChat(com[2], com[3], com[4], com[5], com[6]);
+                                Console.WriteLine(res);
+                                break;
+                            case "delete":
+                                res = await client.DeleteChat(com[2]);
+                                Console.WriteLine(res);
+                                break;
+
+                        }
+                        break;
+                }
+
+
+            }
+
+
+
+            /*
+             switch (com[0])
                 {
                     case "login":
                         {
@@ -105,7 +225,8 @@ namespace NGM_Client
                         Console.WriteLine(res);
                         break;
                 }
-            }
+            */
+
 
 
             
@@ -171,7 +292,7 @@ namespace NGM_Client
             await client.GetWClient().VoiceChat().LeaveVoiceChat();
             */
 
-            
+
 
         }
 

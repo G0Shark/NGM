@@ -9,10 +9,12 @@ namespace NGM_Client
 {
     public class Chat
     {
-        public string id { get; set; }
-        public string channelName { get; set; }
-        public string channelDescription { get; set; }
-        public string channelType { get; set; }
+        public int id { get; set; }
+        public int serverid { get; set; }
+        public string name { get; set; }
+        public string description { get; set; }
+        public string type { get; set; }
+        public string roleid { get; set; }
     }
     public class Message
     {

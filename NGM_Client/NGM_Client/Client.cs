@@ -114,34 +114,14 @@ namespace NGM_Client
 
 
         //ChatController
-        public async Task<Chat[]> GetChats()
+        public async Task<Chat> GetChat()
         {
-            Chat[] channels=null;
-            string data = await (await client.SendRequest(HttpMethod.Get, "chat/getchats")).Content.ReadAsStringAsync();
-            try
-            {
-                channels = JsonSerializer.Deserialize<Chat[]>(data);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(data);
-            }
-
-            return channels;
-        }
-        public async Task<Chat> CteateChats(string chatName, string chatDescription= "_", string chatType= "text")
-        {
-            Chat channel = null;
-
-            string data = await (await client.SendRequest(HttpMethod.Post, "chat/createchat", null, null, new string[] {
-                    "CHAT_NAME", chatName,
-                "CHAT_DESCRIPTION", chatDescription ,
-                "CHAT_TYPE", chatType})).Content.ReadAsStringAsync();
-
+            Chat channel=null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "chat")).Content.ReadAsStringAsync();
             try
             {
                 channel = JsonSerializer.Deserialize<Chat>(data);
-            }
+            }   
             catch (Exception ex)
             {
                 Console.WriteLine(data);
@@ -149,6 +129,41 @@ namespace NGM_Client
 
             return channel;
         }
+        public async Task<string> CteateChat(string serverId,string chatName, string chatDescription= "_", string chatType= "text", string rolesId="0")
+        {
+            //Chat channel = null;
+
+            HttpResponseMessage data =  (await client.SendRequest(HttpMethod.Post, "chat/create", null, null, new string[] {
+                "SERVERID", serverId,
+                    "NAME", chatName,
+                "DESCRIPTION", chatDescription ,
+                "TYPE", chatType,
+                "ROLEID", rolesId
+            }));
+
+            /*
+            try
+            {
+                channel = JsonSerializer.Deserialize<Chat>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }*/
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        public async Task<string> DeleteChat(string id)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "chat/delete", null, null, new string[] {
+                "ID", id
+            }));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
         public async Task<string> AddToChat(string chatId, string otherUserId)
         {
 

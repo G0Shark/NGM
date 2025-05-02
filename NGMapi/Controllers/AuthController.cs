@@ -138,4 +138,18 @@ public class AuthController : ControllerBase
         }
         return new ConflictObjectResult("Это сообщения не должно было произойти!\n Произошла неизведанная ошибка, из-за чего бэк вернул 0.\n Обратитесь к G0Shark_ с информацией что ты сделали для получения этой ошибки.");
     }
+
+    [HttpGet("api/auth")]
+    public ActionResult GetUser(string USERNAME)
+    {
+        try
+        {
+            User u = AuthService.GetUser(USERNAME);
+            return new OkObjectResult(u);
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
 }

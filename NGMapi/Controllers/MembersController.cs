@@ -65,4 +65,50 @@ public class MembersController : ControllerBase
             return e.Res;
         }
     }
+    
+    [HttpPut("api/members/textmute")]
+    public ActionResult TextMute(int USERID, int SERVERID, bool VALUE)
+    {
+        try
+        {
+            string username = AuthService.TryLogin(Request);
+            User user = AuthService.GetUser(username);
+
+            if (!ServersService.IsOwner(user.ID, SERVERID) && !RolesService.IsUserHavePermission(USERID, SERVERID, "MUTE_TEXT"))
+            {
+                return new UnauthorizedObjectResult("Нет прав.");
+            }
+            
+            MembersService.SetTextMute(USERID, SERVERID, VALUE);
+            
+            return new OkObjectResult("Пользователь замьючен.");
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
+    
+    [HttpPut("api/members/voicemute")]
+    public ActionResult VoiceMute(int USERID, int SERVERID, bool VALUE)
+    {
+        try
+        {
+            string username = AuthService.TryLogin(Request);
+            User user = AuthService.GetUser(username);
+
+            if (!ServersService.IsOwner(user.ID, SERVERID) && !RolesService.IsUserHavePermission(USERID, SERVERID, "MUTE_VOICE"))
+            {
+                return new UnauthorizedObjectResult("Нет прав.");
+            }
+            
+            MembersService.SetVoiceMute(USERID, SERVERID, VALUE);
+            
+            return new OkObjectResult("Пользователь замьючен.");
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
 }

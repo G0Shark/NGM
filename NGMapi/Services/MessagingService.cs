@@ -177,6 +177,73 @@ public static class MessagingService
         
         return messages.ToArray();
     }
+    
+    public static Message[] GetMessagesFromDM(int CHATID1, int CHATID2)
+    {
+        List<Message> messages = new List<Message>();
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM messages WHERE CHATID = @CHATID1 AND DMCHAT = 1 OR CHATID = @CHATID2 AND DMCHAT = 1";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@CHATID1", CHATID1);
+                checkCommand.Parameters.AddWithValue("@CHATID2", CHATID2);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        messages.Add(new Message
+                        {
+                            ID = reader.GetInt32("ID"),
+                            CHATID = reader.GetInt32("CHATID"),
+                            DMCHAT = reader.GetBoolean("DMCHAT"),
+                            MESSAGE = reader.GetString("MESSAGE"),
+                            REPLYFORID = reader.GetInt32("REPLYFORID"),
+                        });
+                    }
+                }
+            }
+        }
+        
+        return messages.ToArray();
+    }
+    
+    public static Message GetMessage(int ID)
+    {
+        List<Message> messages = new List<Message>();
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM messages WHERE ID = @ID";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        return new Message
+                        {
+                            ID = reader.GetInt32("ID"),
+                            CHATID = reader.GetInt32("CHATID"),
+                            DMCHAT = reader.GetBoolean("DMCHAT"),
+                            MESSAGE = reader.GetString("MESSAGE"),
+                            REPLYFORID = reader.GetInt32("REPLYFORID"),
+                        };
+                    }
+                }
+            }
+        }
+
+        throw new NGMServiceExeption(new ConflictObjectResult("Сообщение не найдено"));
+    }
 }
 
 public class Message

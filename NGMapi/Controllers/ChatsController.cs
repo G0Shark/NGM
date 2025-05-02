@@ -205,4 +205,18 @@ public class ChatsController : ControllerBase
         ChatsService.UpdateRoles(ID, ROLEID);
         return new OkObjectResult("Роли чата изменены.");
     }
+    
+    [HttpGet("api/chats")]
+    public ActionResult GetChat(int ID)
+    {
+        try
+        {
+            Chat chat = ChatsService.GetChat(ID);
+            return new OkObjectResult(chat);
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
 }

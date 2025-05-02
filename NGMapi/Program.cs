@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using MySql.Data.MySqlClient;
 using Mysqlx;
+using NGM_Server_rebuild.Hubs;
 
 //Проверка на коннект, чтобы я не подключился к несуществующей дб
 try
@@ -64,8 +65,8 @@ app.MapGet("/api/ping", () =>
 });
 
 //Маппинг SignalR хабов
-//app.MapHub<ChatHub>(Path.ChatHub); //Все текстовые сообщения
-//app.MapHub<VoiceHub>(Path.VoiceHub); //Все голосовые сообщения
+app.MapHub<ChatHub>("api/hubs/text"); //Все текстовые сообщения
+app.MapHub<VoiceHub>("api/hubs/voice"); //Все голосовые сообщения
 
 //Запуск приложения!
 app.Run();

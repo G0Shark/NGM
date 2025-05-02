@@ -139,6 +139,93 @@ public static class FriendshipService
         }
     }
     
+    public static int GetSecondUserInFriendship(int USERID, int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery =
+                "SELECT * FROM friendships WHERE ID = @ID;";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        if (reader.GetInt32("ACCEPTERID") != USERID)
+                        {
+                            return reader.GetInt32("ACCEPTERID");
+                        }
+                        if (reader.GetInt32("SENDERID") != USERID)
+                        {
+                            return reader.GetInt32("SENDERID");
+                        }
+                    }
+                }
+            }
+        }
+
+        throw new NGMServiceExeption(
+            new ConflictObjectResult(
+                "ошбика, которой не должно было произойти"));
+    }
+    
+    public static string GetBothFriendshipIDs(int SENDERID, int ACCEPTERID)
+    {
+        string returner = "";
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery =
+                "SELECT * FROM friendships WHERE SENDERID = @SENDERID AND ACCEPTERID = @ACCEPTERID OR SENDERID = @ACCEPTERID AND ACCEPTERID = @SENDERID;";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
+                checkCommand.Parameters.AddWithValue("@ACCEPTERID", ACCEPTERID);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        returner += reader.GetString("ID") + " ";
+                    }
+                }
+            }
+        }
+        return returner;
+    }
+    
+    public static bool IsFriendshipMember(int ID, int USERID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM friendships WHERE ID=@ID AND SENDERID=@USERID OR ID=@ID AND ACCEPTERID=@USERID;";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+                checkCommand.Parameters.AddWithValue("@USERID", USERID);
+                
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    
     public static void FrendshipChange(int SENDERID, int ACCEPTERID, int STATE)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))

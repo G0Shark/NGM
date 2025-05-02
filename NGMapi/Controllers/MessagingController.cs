@@ -11,28 +11,21 @@ public class MessagingController : ControllerBase
     {
         try
         {
-            //TODO: Читать ЛС может внешний
             string username = AuthService.TryLogin(Request);
             int userId = AuthService.GetUser(username).ID;
-
-            if (DMCHAT && !FriendshipService.IsFriendshipExists(ID))
-            {
-                return new NotFoundObjectResult("Данного DM не существует");
-            }
+            
             if (!DMCHAT && !ChatsService.IsChatExists(ID))
             {
-                return new NotFoundObjectResult("Данного not DM чата не существует");
+                return new NotFoundObjectResult("Данного чата не существует");
             }
 
             if (DMCHAT)
             {
-                return Ok(MessagingService.GetMessages(ID, DMCHAT));
+                return Ok(MessagingService.GetMessagesFromDM(userId, ID));
             }
             else
             {
                 var roles = RolesService.GetRolesOfUser(userId, ChatsService.GetChat(ID).SERVERID);
-                List<string> neededRoles = new List<string>();
-
                 if (ChatsService.GetNeededRolesForChat(ID) == "0")
                 {
                     return Ok(MessagingService.GetMessages(ID, DMCHAT));

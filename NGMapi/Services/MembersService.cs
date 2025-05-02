@@ -37,6 +37,58 @@ public static class MembersService
             }
         }
     }
+    
+    public static void SetTextMute(int USERID, int SERVERID, bool VALUE)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "UPDATE members SET TEXTMUTE=@VALUE WHERE USERID=@USERID AND SERVERID=@SERVERID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@VALUE", VALUE);
+                insertCommand.Parameters.AddWithValue("@USERID", USERID);
+                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
+
+                int rowsAffected = insertCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    return;
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
+    
+    public static void SetVoiceMute(int USERID, int SERVERID, bool VALUE)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "UPDATE members SET VOICEMUTE=@VALUE WHERE USERID=@USERID AND SERVERID=@SERVERID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@VALUE", VALUE);
+                insertCommand.Parameters.AddWithValue("@USERID", USERID);
+                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
+
+                int rowsAffected = insertCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    return;
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
 
     public static bool IsMember(int SERVERID, int USERID)
     {
@@ -44,6 +96,56 @@ public static class MembersService
         {
             connection.Open();
             string insertQuery = "SELECT * FROM members WHERE USERID=@USERID AND SERVERID=@SERVERID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
+                insertCommand.Parameters.AddWithValue("@USERID", USERID);
+
+                using var reader = insertCommand.ExecuteReader();
+                if (reader.Read())
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    public static bool IsTextMuted(int SERVERID, int USERID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT * FROM members WHERE USERID=@USERID AND SERVERID=@SERVERID AND TEXTMUTE=1";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
+                insertCommand.Parameters.AddWithValue("@USERID", USERID);
+
+                using var reader = insertCommand.ExecuteReader();
+                if (reader.Read())
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    public static bool IsVoiceMuted(int SERVERID, int USERID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT * FROM members WHERE USERID=@USERID AND SERVERID=@SERVERID AND VOICEMUTE=1";
 
             using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
             {

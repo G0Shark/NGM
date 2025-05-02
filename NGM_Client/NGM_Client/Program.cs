@@ -149,11 +149,16 @@ namespace NGM_Client
                         switch (com[1])
                         {
                             case "connect":
-                                await client.GetWClient().VoiceChat().ConnectToVoiceChat(com[2]);
-                                Console.WriteLine("connected");
+                                
+                                Console.WriteLine(await client.GetWClient().VoiceChat().ConnectToVoiceChat(com[2]));
                                 break;
                             case "leave":
                                 await client.GetWClient().VoiceChat().LeaveVoiceChat();
+                                Console.WriteLine("done");
+                                break;
+
+                            case "set_volume":
+                                client.GetWClient().VoiceChat().SetUserVolume(com[2], float.Parse(com[3], CultureInfo.InvariantCulture));
                                 Console.WriteLine("done");
                                 break;
                         }

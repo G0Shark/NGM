@@ -13,6 +13,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Timers;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Mvc;
 
 namespace NGM_Client
 {
@@ -71,6 +72,8 @@ namespace NGM_Client
         protected string username, password;
         protected string channelId;
 
+        string authHeader;
+
         DataWrapper dw;
 
         Dictionary<string, VoiceUser> voiceUsers;
@@ -108,6 +111,11 @@ namespace NGM_Client
         public void SetPassword(string _val)
         {
             password = _val;
+        }
+
+        public void SetAuthHeader(string a_authHeader)
+        {
+            authHeader = a_authHeader;
         }
 
         //public
@@ -152,29 +160,38 @@ namespace NGM_Client
             
             channelId = _channelId;
             hubConnectionVoice = new HubConnectionBuilder()
-                .WithUrl(basePath + "hub/voice")
+                .WithUrl(basePath + "hubs/voice", options =>
+                {
+                    options.Headers["Authorization"] = authHeader;
+                }
+                )
                 .Build();
+
 
             hubConnectionVoice.On<string>("ReceiveError", async (message) =>
             {
+                
                 Console.WriteLine(message);
             });
             hubConnectionVoice.On<string, string>("ReceiveMessage", async (username, message) =>
             {
                 Console.WriteLine(username+": "+message);
             });
-            hubConnectionVoice.On<string, byte[]>("ReceiveVoice", async (_username, data) =>
+            hubConnectionVoice.On<User, byte[]>("ReceiveVoice", async (caller, data) =>
             {
-                OnReceiveVoice(_username, data);
+                OnReceiveVoice(caller.id.ToString(), data);
             });
+
+            
+
 
 
 
             try
             {
-                Console.WriteLine(channelId+" "+ username+" "+ password);
+                Console.WriteLine("connecting: "+channelId+" "+ username+" "+ password);
                 await hubConnectionVoice.StartAsync();
-                await hubConnectionVoice.InvokeAsync("connect", channelId, username, password);
+                await hubConnectionVoice.InvokeAsync("Connect", int.Parse(channelId), false);
             }
             catch(Exception ex) { Console.WriteLine(ex.Message); return ex.Message; }
 
@@ -183,23 +200,23 @@ namespace NGM_Client
             return "connected";
         }
 
-        public void OnReceiveVoice(string _username, byte[]  data)
+        public void OnReceiveVoice(string a_id, byte[]  data)
         {
-            if (username == _username) return;
-            if (voiceUsers.ContainsKey(_username))
+            if (username == a_id) return;
+            if (voiceUsers.ContainsKey(a_id))
                 try
                 {
 
-                    if (voiceUsers[_username].GetAudioBufferStream().BufferedBytes >= 4800 * 4)
-                        voiceUsers[_username].GetAudioBufferStream().ClearBuffer();
+                    if (voiceUsers[a_id].GetAudioBufferStream().BufferedBytes >= 4800 * 4)
+                        voiceUsers[a_id].GetAudioBufferStream().ClearBuffer();
 
 
-                    byte[] decompressedData = voiceUsers[_username].Getdw().Decode(data);// 
-                    voiceUsers[_username].GetAudioBufferStream().AddSamples(decompressedData, 0, decompressedData.Length);
+                    byte[] decompressedData = voiceUsers[a_id].Getdw().Decode(data);// 
+                    voiceUsers[a_id].GetAudioBufferStream().AddSamples(decompressedData, 0, decompressedData.Length);
 
                 }
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
-            else { AddVoiceUser(_username); }
+            else { AddVoiceUser(a_id); }
         }
 
         public async Task LeaveVoiceChat()
@@ -208,7 +225,7 @@ namespace NGM_Client
             {
                 if (channelId == "" || channelId == null) return;
 
-                await hubConnectionVoice.InvokeAsync("disconnect", channelId, username, password);
+                await hubConnectionVoice.InvokeAsync("Disconnect", int.Parse(channelId));
                 await hubConnectionVoice.StopAsync();
                 channelId = "";
 
@@ -233,7 +250,7 @@ namespace NGM_Client
             if (hubConnectionVoice != null)
                 try
                 { 
-                    await hubConnectionVoice.InvokeAsync("SendToVoiceChat", channelId, username, dw.Encode(e.Buffer));//dw.Encode(e.Buffer)
+                    await hubConnectionVoice.InvokeAsync("Send", int.Parse(channelId), dw.Encode(e.Buffer), false);//dw.Encode(e.Buffer)
                 }
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
 

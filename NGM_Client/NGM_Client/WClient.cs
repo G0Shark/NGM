@@ -87,6 +87,9 @@ namespace NGM_Client
         public void SetAuthorizationHeader(string scheme, string parameter)
         {
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, parameter);
+
+            srVoiceChat.SetAuthHeader(scheme +" "+ parameter);
+
             //Console.WriteLine(httpClient.DefaultRequestHeaders.Authorization);
         }
 

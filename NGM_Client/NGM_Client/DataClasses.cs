@@ -71,4 +71,19 @@ namespace NGM_Client
         visible
     }
 
+    public enum AuthParams
+    {
+        username,
+        password,
+        email,
+        displayname,
+        description,
+    }
+
+    public enum MuteParams
+    {
+        textmute,
+        voicemute
+    }
+
 }

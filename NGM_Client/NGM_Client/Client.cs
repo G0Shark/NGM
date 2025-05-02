@@ -41,7 +41,7 @@ namespace NGM_Client
         }
 
 
-        //UserController
+        //Auth
         public async Task<User> Login()
         {
             User user = null;
@@ -58,6 +58,43 @@ namespace NGM_Client
 
             return user;
         }
+
+        public async Task<string> Delete()
+        {
+            string data = await (await client.SendRequest(HttpMethod.Delete, "auth/delete")).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+
+            return data;
+        }
+
+        public async Task<string> AuthChange(AuthParams param, string value)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Post, "auth/" + param, null, null, [
+                    ("" + param).ToUpper(), value]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        public async Task<User> AuthChange(string username)
+        {
+
+            string data = await (await client.SendRequest(HttpMethod.Get, "auth", null, null, [
+                    "USERNAME", username])).Content.ReadAsStringAsync();
+            User user = null;
+            try
+            {
+                user = JsonSerializer.Deserialize<User>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return user;
+        }
+
+
 
         public async Task<string> Register(string[] paramsValues)
         {
@@ -165,7 +202,7 @@ namespace NGM_Client
 
 
 
-
+        //Roles
         public async Task<string> RoleCreate(string serverId, string level, string permission, string name)
         {
 
@@ -237,6 +274,43 @@ namespace NGM_Client
             HttpResponseMessage data = (await client.SendRequest(HttpMethod.Patch, "servers/" + param, null, null, [
                     "ID", id,
                     pName.ToUpper(), value
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+
+
+        //Members
+
+        public async Task<string> MemberJoin(string serverId, string joinPassword)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/delete", null, null, [
+                    "SERVERID", serverId,
+                    "JOINPASSWORD", joinPassword
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        public async Task<string> MemberLeave(string serverId)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/delete", null, null, [
+                    "SERVERID", serverId
+            ]));
+
+            return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+
+        public async Task<string> MemberMute(MuteParams mode, string userId, string serverId, bool value)
+        {
+
+            HttpResponseMessage data = (await client.SendRequest(HttpMethod.Delete, "servers/"+ mode, null, null, [
+                    "USERID", userId,
+                    "SERVERID", serverId,
+                    (""+mode).ToUpper(),value?"true":"false"
             ]));
 
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();

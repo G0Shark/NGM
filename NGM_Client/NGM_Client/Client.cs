@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Hosting.Server;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -46,6 +47,23 @@ namespace NGM_Client
         {
             User user = null;
             string data = await (await client.SendRequest(HttpMethod.Get, "auth/login")).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                user = JsonSerializer.Deserialize<User>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return user;
+        }
+
+        public async Task<User> GetByUsername(string a_username)
+        {
+            User user = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "auth/get_byusername", null,null, ["USERNAME", a_username])).Content.ReadAsStringAsync();
             //Console.WriteLine(data);
             try
             {
@@ -110,6 +128,24 @@ namespace NGM_Client
             }*/
 
             return data;
+        }
+
+
+        public async Task<User> GetUserById(string id)
+        {
+            User user = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "auth/get_byid", null, null, ["ID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                user = JsonSerializer.Deserialize<User>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return user;
         }
 
 
@@ -182,7 +218,22 @@ namespace NGM_Client
 
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
+        public async Task<Chat> GetChatById(string id)
+        {
+            Chat result = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "chats/get_byid", null, null, ["ID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                result = JsonSerializer.Deserialize<Chat>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
 
+            return result;
+        }
 
         //MessageController
         public async Task<Message[]> GetMessages(string chatId, bool dmChat)
@@ -213,6 +264,22 @@ namespace NGM_Client
                     "RECEIVERID", otherUserId]));
 
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
+        }
+        public async Task<Friendship> GetFriendshipById(string id)
+        {
+            Friendship result = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "friendship/get_byid", null, null, ["ID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                result = JsonSerializer.Deserialize<Friendship>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return result;
         }
 
 
@@ -254,9 +321,25 @@ namespace NGM_Client
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
 
+        public async Task<Role> GetRoleById(string id)
+        {
+            Role result = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "roles/get_byid", null, null, ["ID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                result = JsonSerializer.Deserialize<Role>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return result;
+        }
 
 
-
+        //servers
         public async Task<string> ServerCreate(string name, string description, string joinpassword, bool visible)
         {
 
@@ -295,6 +378,63 @@ namespace NGM_Client
         }
 
 
+        public async Task<Server> GetServerByName(string name)
+        {
+
+            Server server = null;
+
+            string data = await (await client.SendRequest(HttpMethod.Get, "messages/get", null, null, ["NAME", name])).Content.ReadAsStringAsync();
+
+            try
+            {
+                server = JsonSerializer.Deserialize<Server>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return server;
+        }
+
+        public async Task<Server[]> GetServers()
+        {
+
+            Server[] servers = null;
+
+            string data = await (await client.SendRequest(HttpMethod.Get, "servers/get_all", null, null, null)).Content.ReadAsStringAsync();
+
+            try
+            {
+                servers = JsonSerializer.Deserialize<Server[]>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return servers;
+        }
+
+
+        public async Task<Server> GetServerById(string id)
+        {
+            Server result = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "servers/get_byid", null, null, ["ID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                result = JsonSerializer.Deserialize<Server>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return result;
+        }
+
+
 
         //Members
 
@@ -330,6 +470,29 @@ namespace NGM_Client
 
             return data.StatusCode.ToString() + " " + await data.Content.ReadAsStringAsync();
         }
+
+
+        public async Task<Member> GetMemberById(string id)
+        {
+            Member result = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "roles/get_byid", null, null, ["ID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                result = JsonSerializer.Deserialize<Member>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return result;
+        }
+
+
+        //other
+
+
 
     }
 }

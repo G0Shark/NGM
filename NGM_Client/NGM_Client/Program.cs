@@ -69,6 +69,14 @@ namespace NGM_Client
                                 res = (await client.Delete());//
                                 Console.WriteLine(res);
                                 break;
+                            case "get":
+                                res = (await client.GetUserById(com[2])).id.ToString();
+                                Console.WriteLine(res);
+                                break;
+                            case "getu":
+                                res = (await client.GetByUsername(com[2])).id.ToString();
+                                Console.WriteLine(res);
+                                break;
                         }
                         break;
 
@@ -89,7 +97,14 @@ namespace NGM_Client
                                 res = await client.ServerChange(com[2], (ServerParams)Enum.Parse(typeof(ServerParams), com[3]), com[4]);
                                 Console.WriteLine(res);
                                 break;
-
+                            case "get":
+                                res = (await client.GetServerById(com[2])).id.ToString();
+                                Console.WriteLine(res);
+                                break;
+                            case "geta":
+                                res = (await client.GetServers())[0].id.ToString();
+                                Console.WriteLine(res);
+                                break;
                         }
                         break;
                     case "member":
@@ -105,6 +120,10 @@ namespace NGM_Client
                                 break;
                             case "mute":
                                 res = await client.MemberMute((MuteParams)Enum.Parse(typeof(MuteParams),com[2]), com[3], com[4], com[5]=="true");
+                                Console.WriteLine(res);
+                                break;
+                            case "get":
+                                res = (await client.GetMemberById(com[2])).id.ToString();
                                 Console.WriteLine(res);
                                 break;
 
@@ -126,6 +145,10 @@ namespace NGM_Client
                                 res = await client.RoleChange(com[2], (RoleParams)Enum.Parse(typeof(RoleParams), com[3]), com[4]);
                                 Console.WriteLine(res);
                                 break;
+                            case "get":
+                                res = (await client.GetRoleById(com[2])).id.ToString();
+                                Console.WriteLine(res);
+                                break;
 
                         }
                         break;
@@ -139,6 +162,10 @@ namespace NGM_Client
                                 break;
                             case "delete":
                                 res = await client.DeleteChat(com[2]);
+                                Console.WriteLine(res);
+                                break;
+                            case "get":
+                                res = (await client.GetChatById(com[2])).id.ToString();
                                 Console.WriteLine(res);
                                 break;
 

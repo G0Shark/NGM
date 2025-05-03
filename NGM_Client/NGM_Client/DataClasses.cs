@@ -35,6 +35,48 @@ namespace NGM_Client
         public string description { get; set; }
     }
 
+    public class Server
+    {
+        public int id { get; set; }
+        public string name { get; set; }
+        public string description { get; set; }
+        public string joinpassword { get; set; }
+        public bool visible { get; set; }
+        public int ownerid { get; set; }
+        public DateTime creation_date { get; set; }
+    }
+
+
+    public class Role
+    {
+        public int id { get; set; }
+        public int serverid { get; set; }
+        public int level { get; set; }
+        public string permissions { get; set; }
+        public string name { get; set; }
+    }
+    public class Member
+    {
+        public int id { get; set; }
+        public int serverid { get; set; }
+        public int userid { get; set; }
+        public int roleid { get; set; }
+        public string displayname { get; set; }
+        public bool textmute { get; set; }
+        public bool voicemute { get; set; }
+    }
+
+
+    public class Friendship
+    {
+        public int id { get; set; }
+        public int senderid { get; set; }
+        public int accepterid { get; set; }
+        public int state { get; set; }
+    }
+
+
+
     public enum Permission
     {
         ALL = 'a',
@@ -86,6 +128,17 @@ namespace NGM_Client
     {
         textmute,
         voicemute
+    }
+
+    public enum ClientSections
+    {
+        auth,
+        chats,
+        friendship,
+        members,
+        messages,
+        roles,
+        servers
     }
 
 }

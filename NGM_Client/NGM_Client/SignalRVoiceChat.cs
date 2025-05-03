@@ -168,11 +168,20 @@ namespace NGM_Client
                 .Build();
 
 
-            hubConnectionVoice.On<string>("ReceiveError", async (message) =>
+            hubConnectionVoice.On<UnauthorizedResult>("ReceiveError", async (message) =>
             {
-                
-                Console.WriteLine(message);
+                Console.WriteLine(message.StatusCode);
             });
+            hubConnectionVoice.On<BadRequestResult>("ReceiveError", async (message) =>
+            {
+                Console.WriteLine(message.StatusCode);
+            });
+            hubConnectionVoice.On<ConflictResult>("ReceiveError", async (message) =>
+            {
+                Console.WriteLine(message.StatusCode);
+            });
+
+
             hubConnectionVoice.On<string, string>("ReceiveMessage", async (username, message) =>
             {
                 Console.WriteLine(username+": "+message);

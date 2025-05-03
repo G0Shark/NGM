@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting.Server;
+﻿using Google.Protobuf.WellKnownTypes;
+using Microsoft.AspNetCore.Hosting.Server;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -56,6 +57,8 @@ namespace NGM_Client
             {
                 Console.WriteLine(data);
             }
+
+            client.SetUserId(user.id.ToString());
 
             return user;
         }
@@ -480,6 +483,23 @@ namespace NGM_Client
             try
             {
                 result = JsonSerializer.Deserialize<Member>(data);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(data);
+            }
+
+            return result;
+        }
+
+        public async Task<Member[]> GetServerMembers(string id)
+        {
+            Member[] result = null;
+            string data = await (await client.SendRequest(HttpMethod.Get, "members/get_byserverid", null, null, ["SERVERID", id])).Content.ReadAsStringAsync();
+            //Console.WriteLine(data);
+            try
+            {
+                result = JsonSerializer.Deserialize<Member[]>(data);
             }
             catch (Exception ex)
             {

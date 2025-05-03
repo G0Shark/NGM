@@ -215,7 +215,7 @@ namespace NGM_Client
 
         public void OnReceiveVoice(string a_id, byte[]  data)
         {
-            if (username == a_id) return;
+            if (userId == a_id) return;
             if (voiceUsers.ContainsKey(a_id))
                 try
                 {

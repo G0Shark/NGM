@@ -20,12 +20,13 @@ namespace NGM_Client
     {
         public int id { get; set; }
         public int chatid { get; set; }
+        public int senderid { get; set; }
         public string message { get; set; }
         public int replyforid { get; set; }
-        public Timestamp timestamp { get; set; }
+        public DateTime timestamp { get; set; }
         public bool dmchat { get; set; }
     }
-    
+
     public class User
     {
         public int id { get; set; }

@@ -29,10 +29,10 @@ namespace NGM_Client
         JsonWrapper jsonWrapper;
         string basePath;
 
-        SignalRChat srChat;
+        SignalRTextChat srTextChat;
         SignalRVoiceChat srVoiceChat;
 
-        string username, password;
+        string username, password, id;
 
         public WClient(string _username, string _password)
         {
@@ -43,8 +43,15 @@ namespace NGM_Client
             jsonWrapper=new JsonWrapper("ClientConfig.json");
             basePath = jsonWrapper.GetConfigurationJs().GetSection("AppPath").Value;
 
-            srChat = new SignalRChat(basePath, username,password);
+            srTextChat = new SignalRTextChat(basePath, username,password);
             srVoiceChat = new SignalRVoiceChat(basePath, int.Parse(jsonWrapper.GetConfigurationJs().GetSection("MicrophoneIndex").Value), username, password);
+        }
+
+        public void SetUserId(string u_id)
+        {
+            id = u_id;
+            srTextChat.SetUserId(id);
+            srVoiceChat.SetUserId(id);
         }
 
         
@@ -69,9 +76,9 @@ namespace NGM_Client
 
         //getters
 
-        public SignalRChat Chat()
+        public SignalRTextChat TextChat()
         {
-            return srChat;
+            return srTextChat;
         }
         public SignalRVoiceChat VoiceChat()
         {
@@ -89,6 +96,7 @@ namespace NGM_Client
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, parameter);
 
             srVoiceChat.SetAuthHeader(scheme +" "+ parameter);
+            srTextChat.SetAuthHeader(scheme + " " + parameter);
 
             //Console.WriteLine(httpClient.DefaultRequestHeaders.Authorization);
         }

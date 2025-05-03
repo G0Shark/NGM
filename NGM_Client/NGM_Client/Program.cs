@@ -24,6 +24,8 @@ namespace NGM_Client
 
             Client client = new Client(username, password);
             
+            //Member[] aserverMembers = await client.GetServerMembers("3");
+            //Console.WriteLine(aserverMembers.Length);
 
 
             string res;
@@ -35,7 +37,7 @@ namespace NGM_Client
                 for (int i = 0; i < data.Length; i++)
                     com[i] = data[i];
 
-
+                bool dm;
 
                 switch (com[0])
                 {
@@ -47,6 +49,7 @@ namespace NGM_Client
                                     try
                                     {
                                         User user = (await client.Login());
+                                        
                                         Console.WriteLine(user.id);
                                     }
                                     catch (Exception ex)
@@ -176,8 +179,8 @@ namespace NGM_Client
                         switch (com[1])
                         {
                             case "connect":
-                                
-                                await client.GetWClient().VoiceChat().ConnectToVoiceChat(com[2]);
+                                dm = (com[3] == "dm");
+                                await client.GetWClient().VoiceChat().ConnectToVoiceChat(com[2],dm);
                                 break;
                             case "leave":
                                 await client.GetWClient().VoiceChat().LeaveVoiceChat();
@@ -190,7 +193,62 @@ namespace NGM_Client
                                 break;
                         }
                         break;
-                        
+                    case "text":
+                        switch (com[1])
+                        {
+                            case "connect":
+                                dm = (com[3] == "dm");
+                                string chat_id = com[2];
+
+                                await client.GetWClient().TextChat().ConnectToTextChat(new List<string> { com[2] }, dm);
+
+
+                                Console.Clear();
+
+                                Console.WriteLine("connected");
+
+
+
+                                Message[] messages = await client.GetMessages(chat_id, dm);
+
+                                Member[] serverMembers;
+                                Dictionary<int, string> id_members = new Dictionary<int, string>();
+
+
+
+                                if(!dm)
+                                {
+                                    string server_id = (await client.GetChatById(chat_id)).serverid.ToString();
+                                    Console.WriteLine(server_id);
+                                    serverMembers = await client.GetServerMembers(server_id);
+
+                                    for (int i = 0; i < serverMembers.Length; i++)
+                                        id_members[serverMembers[i].userid] = serverMembers[i].displayname;
+                                }
+                                id_members[int.Parse(chat_id)] = (await client.GetUserById(chat_id)).displayname;
+
+                                foreach (Message mes in messages)
+                                {
+                                    if(!dm)
+                                        Console.WriteLine(id_members[mes.senderid] + ": " + mes.message);
+                                }
+                                    
+                                    
+
+                                string m = Console.ReadLine();
+                                while (m != "exit")
+                                {
+                                    client.GetWClient().TextChat().SendToTextChat(chat_id, m);
+                                    m = Console.ReadLine();
+                                }
+                                await client.GetWClient().TextChat().LeaveTextChat(com[2]);
+                                Console.WriteLine("done");
+
+                                break;
+
+                        }
+                        break;
+
                 }
 
 

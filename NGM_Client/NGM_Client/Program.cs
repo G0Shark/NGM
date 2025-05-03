@@ -177,7 +177,7 @@ namespace NGM_Client
                         {
                             case "connect":
                                 
-                                Console.WriteLine(await client.GetWClient().VoiceChat().ConnectToVoiceChat(com[2]));
+                                await client.GetWClient().VoiceChat().ConnectToVoiceChat(com[2]);
                                 break;
                             case "leave":
                                 await client.GetWClient().VoiceChat().LeaveVoiceChat();

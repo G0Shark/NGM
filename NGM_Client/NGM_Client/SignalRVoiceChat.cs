@@ -74,6 +74,8 @@ namespace NGM_Client
 
         string authHeader;
 
+        bool DirectMessages=false;
+
         DataWrapper dw;
 
         Dictionary<string, VoiceUser> voiceUsers;
@@ -154,8 +156,10 @@ namespace NGM_Client
         }
 
 
-        public async Task<string> ConnectToVoiceChat(string _channelId)
+        public async Task<string> ConnectToVoiceChat(string _channelId, bool dm=false)
         {
+            DirectMessages = dm;
+
             if (_channelId == "" || _channelId==null) return "null channelId";
             
             channelId = _channelId;
@@ -182,9 +186,9 @@ namespace NGM_Client
             });
 
 
-            hubConnectionVoice.On<string, string>("ReceiveMessage", async (username, message) =>
+            hubConnectionVoice.On<User>("ReceiveUserConnect", async (user) =>
             {
-                Console.WriteLine(username+": "+message);
+                Console.WriteLine(user.username+" connected");
             });
             hubConnectionVoice.On<User, byte[]>("ReceiveVoice", async (caller, data) =>
             {
@@ -200,7 +204,7 @@ namespace NGM_Client
             {
                 Console.WriteLine("connecting: "+channelId+" "+ username+" "+ password);
                 await hubConnectionVoice.StartAsync();
-                await hubConnectionVoice.InvokeAsync("Connect", int.Parse(channelId), false);
+                await hubConnectionVoice.InvokeAsync("Connect", int.Parse(channelId), DirectMessages);
             }
             catch(Exception ex) { Console.WriteLine(ex.Message); return ex.Message; }
 
@@ -259,7 +263,7 @@ namespace NGM_Client
             if (hubConnectionVoice != null)
                 try
                 { 
-                    await hubConnectionVoice.InvokeAsync("Send", int.Parse(channelId), dw.Encode(e.Buffer), false);//dw.Encode(e.Buffer)
+                    await hubConnectionVoice.InvokeAsync("Send", int.Parse(channelId), dw.Encode(e.Buffer), DirectMessages);//dw.Encode(e.Buffer)
                 }
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
 

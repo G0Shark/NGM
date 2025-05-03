@@ -234,7 +234,6 @@ public static class AuthService
                     }
                     else
                     {
-                        Console.WriteLine("Eroor login with credentials: "+USERNAME + " " + PASSWORD);
                         throw new NGMServiceExeption(new UnauthorizedObjectResult("Неверные данные для входа"));
                     }
                 }

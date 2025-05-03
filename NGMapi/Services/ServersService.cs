@@ -353,6 +353,43 @@ public static class ServersService
             }
         }
     }
+
+    public static Server[] GetServers()
+    {
+        List<Server> servers = new List<Server>();
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "SELECT * FROM servers WHERE VISIBLE=1";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                using (MySqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        servers.Add(new Server
+                        {
+                            ID = reader.GetInt32("ID"),
+                            NAME = reader.GetString("NAME"),
+                            DESCRIPTION = reader.GetString("DESCRIPTION"),
+                            JOINPASSWORD = reader.GetString("JOINPASSWORD"),
+                            VISIBLE = reader.GetBoolean("VISIBLE"),
+                            OWNERID = reader.GetInt32("OWNERID"),
+                            CREATION_DATE = reader.GetDateTime("CREATION_DATE"),
+                        });
+                    }
+                    else
+                    {
+                        throw new NGMServiceExeption(new NotFoundObjectResult("Серверов не существует"));
+                    }
+                }
+            }
+        }
+        
+        return servers.ToArray();
+    }
 }
 
 public class Server

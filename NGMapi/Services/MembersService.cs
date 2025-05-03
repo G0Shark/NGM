@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using K4os.Compression.LZ4.Internal;
+using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 
 namespace NGM_Server_rebuild.Services;
@@ -236,4 +237,74 @@ public static class MembersService
             }
         }
     }
+    
+    public static void DeleteUser(int USERID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "DELETE FROM members WHERE USERID=@USERID";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@USERID", USERID);
+
+                int rowsAffected = insertCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    return;
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
+
+    public static Member GetMember(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM members WHERE ID = @ID";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Member
+                        {
+                            ID = reader.GetInt32("ID"),
+                            SERVERID = reader.GetInt32("SERVERID"),
+                            USERID = reader.GetInt32("USERID"),
+                            ROLEID = reader.GetInt32("ROLEID"),
+                            DISPLAYNAME = reader.GetString("DISPLAYNAME"),
+                            TEXTMUTE = reader.GetBoolean("TEXTMUTE"),
+                            VOICEMUTE = reader.GetBoolean("VOICEMUTE"),
+                        };
+                    }
+                    else
+                    {
+                        throw new NGMServiceExeption(new NotFoundObjectResult("Чата не существует"));
+                    }
+                }
+            }
+        }
+    }
+}
+
+public class Member
+{
+    public int ID { get; set; }
+    public int SERVERID { get; set; }
+    public int USERID { get; set; }
+    public int ROLEID { get; set; }
+    public string DISPLAYNAME { get; set; }
+    public bool TEXTMUTE { get; set; }
+    public bool VOICEMUTE { get; set; }
 }

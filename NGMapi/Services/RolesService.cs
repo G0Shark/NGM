@@ -17,7 +17,12 @@ public static class RolesService
                 checkCommand.Parameters.AddWithValue("@ID", ID);
                 using (MySqlDataReader reader = checkCommand.ExecuteReader())
                 {
-                    return reader.GetInt32(0);
+                    if (reader.Read())
+                    {
+                        return reader.GetInt32(0);
+                    }
+
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
                 }
             }
         }
@@ -100,7 +105,7 @@ public static class RolesService
                     cmd.Parameters.AddWithValue(paramName, roleIds[i]);
                 }
 
-                var sql = $"SELECT ID, NAME, LEVEL, PERMISSIONS FROM roles WHERE ID IN ({string.Join(", ", parameters)})";
+                var sql = $"SELECT * FROM roles WHERE ID IN ({string.Join(", ", parameters)})";
                 cmd.CommandText = sql;
 
                 using var reader = cmd.ExecuteReader();
@@ -119,6 +124,37 @@ public static class RolesService
 
             return roles.ToArray();
     }
+    
+    public static Role GetRole(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM roles WHERE ID = @ID";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Role
+                        {
+                            ID = reader.GetInt32("ID"),
+                            SERVERID = reader.GetInt32("SERVERID"),
+                            LEVEL = reader.GetInt32("LEVEL"),
+                            PERMISSIONS = reader.GetString("PERMISSIONS"),
+                            NAME = reader.GetString("NAME"),
+                        };
+                    }
+
+                    throw new NGMServiceExeption(new ConflictObjectResult("Роли не найдено."));
+                }
+            }
+        }
+    }
+    
     public static bool IsLevelExists(int SERVERID, int LEVEL)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))

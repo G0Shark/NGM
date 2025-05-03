@@ -7,7 +7,7 @@ namespace NGM_Server_rebuild.Controllers;
 public class MembersController : ControllerBase
 {
     [HttpPost("api/members/join")]
-    public ActionResult JoinServer(int SERVERID, string? JOINPASSWORD)
+    public ActionResult JoinServer(int SERVERID, string JOINPASSWORD)
     {
         try
         {
@@ -44,7 +44,7 @@ public class MembersController : ControllerBase
     }
     
     [HttpPost("api/members/leave")]
-    public ActionResult JoinServer(int SERVERID)
+    public ActionResult LeaveServer(int SERVERID)
     {
         try
         {
@@ -74,7 +74,13 @@ public class MembersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             User user = AuthService.GetUser(username);
 
-            if (!ServersService.IsOwner(user.ID, SERVERID) && !RolesService.IsUserHavePermission(USERID, SERVERID, "MUTE_TEXT"))
+            if (!MembersService.IsMember(SERVERID, USERID))
+            {
+                return new BadRequestObjectResult("Данный пользователь не участник сервера.");
+            }
+            
+            if (!ServersService.IsOwner(SERVERID, user.ID) && 
+                !RolesService.IsUserHavePermission(USERID, SERVERID, "MUTE_TEXT"))
             {
                 return new UnauthorizedObjectResult("Нет прав.");
             }
@@ -97,7 +103,13 @@ public class MembersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             User user = AuthService.GetUser(username);
 
-            if (!ServersService.IsOwner(user.ID, SERVERID) && !RolesService.IsUserHavePermission(USERID, SERVERID, "MUTE_VOICE"))
+            if (!MembersService.IsMember(SERVERID, USERID))
+            {
+                return new BadRequestObjectResult("Данный пользователь не участник сервера.");
+            }
+            
+            if (!ServersService.IsOwner(SERVERID, user.ID) && 
+                !RolesService.IsUserHavePermission(USERID, SERVERID, "MUTE_VOICE"))
             {
                 return new UnauthorizedObjectResult("Нет прав.");
             }
@@ -105,6 +117,21 @@ public class MembersController : ControllerBase
             MembersService.SetVoiceMute(USERID, SERVERID, VALUE);
             
             return new OkObjectResult("Пользователь замьючен.");
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
+    
+    //TODO: Возможность кикать людей, и банить
+    [HttpGet("api/members/get_byid")]
+    public ActionResult GetMember(int ID)
+    {
+        try
+        {
+            Member member = MembersService.GetMember(ID);
+            return new OkObjectResult(member);
         }
         catch (NGMServiceExeption e)
         {

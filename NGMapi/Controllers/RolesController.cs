@@ -15,13 +15,14 @@ public class RolesController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int ID = AuthService.GetUser(username).ID;
 
-            if (!RolesService.IsUserHavePermission(ID, SERVERID, "CREATE_ROLE") ||
-                !ServersService.IsOwner(ID, SERVERID))
+            if (!RolesService.IsUserHavePermission(ID, SERVERID, "CREATE_ROLE") &&
+                !ServersService.IsOwner(SERVERID, ID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
             }
 
-            if (LEVEL < RolesService.UserMaxLevel(ID, SERVERID))
+            if (LEVEL < RolesService.UserMaxLevel(ID, SERVERID) &&
+                !ServersService.IsOwner(SERVERID, ID))
             {
                 return new UnauthorizedObjectResult("Невозможно создать роль выше вашей");
             }
@@ -47,23 +48,24 @@ public class RolesController : ControllerBase
         {
             string username = AuthService.TryLogin(Request);
             int USERID = AuthService.GetUser(username).ID;
-            
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "DELETE_ROLE") ||
+            
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "DELETE_ROLE") &&
                 !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
             }
 
-            if (RolesService.GetLevelOfRole(ID) < RolesService.UserMaxLevel(ID, SERVERID))
+            if (RolesService.GetLevelOfRole(ID) < RolesService.UserMaxLevel(USERID, SERVERID) &&
+                !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Невозможно удалить роль выше вашей");
             }
 
 
             RolesService.DeleteRole(ID);
-            return new OkObjectResult("Роль создана");
+            return new OkObjectResult("Роль удаленна");
         }
         catch (NGMServiceExeption ex)
         {
@@ -81,7 +83,7 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") ||
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
                 !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -111,7 +113,7 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") ||
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
                 !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -141,7 +143,7 @@ public class RolesController : ControllerBase
             
             int SERVERID = RolesService.GetServerIDByRoleID(ID);
 
-            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") ||
+            if (!RolesService.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
                 !ServersService.IsOwner(SERVERID, USERID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -166,6 +168,20 @@ public class RolesController : ControllerBase
         catch (NGMServiceExeption ex)
         {
             return ex.Res;
+        }
+    }
+    
+    [HttpGet("api/roles/get_byid")]
+    public ActionResult GetRole(int ID)
+    {
+        try
+        {
+            Role role = RolesService.GetRole(ID);
+            return new OkObjectResult(role);
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
         }
     }
 }

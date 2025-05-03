@@ -157,4 +157,18 @@ public class FriendshipController : ControllerBase
             return e.Res;
         }
     }
+
+    [HttpGet("api/friendship/get_byid")]
+    public ActionResult GetFriendship(int ID)
+    {
+        try
+        {
+            Friendship fs = FriendshipService.GetFriendship(ID);
+            return new OkObjectResult(fs);
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
 }

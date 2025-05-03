@@ -13,6 +13,7 @@ public class MessagingController : ControllerBase
         {
             string username = AuthService.TryLogin(Request);
             int userId = AuthService.GetUser(username).ID;
+            Chat chat = ChatsService.GetChat(ID);
             
             if (!DMCHAT && !ChatsService.IsChatExists(ID))
             {
@@ -31,15 +32,25 @@ public class MessagingController : ControllerBase
                     return Ok(MessagingService.GetMessages(ID, DMCHAT));
                 }
                 
-                foreach (string role in ChatsService.GetNeededRolesForChat(ID).Split(' '))
+                if (!RolesService.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") && 
+                    !ServersService.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
                 {
-                    if (roles.First(x => x.ID == int.Parse(role)) != null)
+                    bool containsRole = false;
+                    foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        return Ok(MessagingService.GetMessages(ID, DMCHAT));
+                        if (roles.Contains(RolesService.GetRole(int.Parse(roleId))))
+                        {
+                            containsRole = true;
+                        }
+                    }
+
+                    if (!containsRole)
+                    {
+                        return new UnauthorizedObjectResult("Нет прав");
                     }
                 }
                 
-                return new UnauthorizedObjectResult("Нет прав для чтения сообщений");
+                return Ok(MessagingService.GetMessagesFromDM(userId, ID));
             }
         }
         catch (NGMServiceExeption e)

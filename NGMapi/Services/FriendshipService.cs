@@ -277,4 +277,68 @@ public static class FriendshipService
             }
         }
     }
+    
+    public static void DeleteUser(int USERID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string insertQuery = "DELETE FROM friendships WHERE SENDERID=@USERID OR ACCEPTERID=@USERID;";
+
+            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@USERID", USERID);
+                
+                int rowsAffected = insertCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    return;
+                }
+                else
+                {
+                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+                }
+            }
+        }
+    }
+
+    public static Friendship GetFriendship(int ID)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM friendships WHERE ID = @ID";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@ID", ID);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Friendship
+                        {
+                            ID = reader.GetInt32("ID"),
+                            SENDERID = reader.GetInt32("SENDERID"),
+                            ACCEPTERID = reader.GetInt32("ACCEPTERID"),
+                            STATE = reader.GetInt32("STATE")
+                        };
+                    }
+                    else
+                    {
+                        throw new NGMServiceExeption(new NotFoundObjectResult("Сотружества не существует"));
+                    }
+                }
+            }
+        }
+    }
+}
+
+public class Friendship
+{
+    public int ID { get; set; }
+    public int SENDERID { get; set; }
+    public int ACCEPTERID { get; set; }
+    public int STATE { get; set; } 
 }

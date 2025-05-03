@@ -55,7 +55,10 @@ public class AuthController : ControllerBase
         try
         {
             string username = AuthService.TryLogin(Request);
+            User u = AuthService.GetUser(username);
             AuthService.DeleteUser(username);
+            MembersService.DeleteUser(u.ID);
+            FriendshipService.DeleteUser(u.ID);
         }
         catch (NGMServiceExeption e)
         {
@@ -65,12 +68,12 @@ public class AuthController : ControllerBase
     }
     
     [HttpPatch("api/auth/username")]
-    public ActionResult UpdateUsername(string NEWUSERNAME)
+    public ActionResult UpdateUsername(string USERNAME)
     {
         try
         {
             string username = AuthService.TryLogin(Request);
-            AuthService.UpdateUsername(username, NEWUSERNAME);
+            AuthService.UpdateUsername(username, USERNAME);
         }
         catch (NGMServiceExeption e)
         {
@@ -139,12 +142,26 @@ public class AuthController : ControllerBase
         return new ConflictObjectResult("Это сообщения не должно было произойти!\n Произошла неизведанная ошибка, из-за чего бэк вернул 0.\n Обратитесь к G0Shark_ с информацией что ты сделали для получения этой ошибки.");
     }
 
-    [HttpGet("api/auth")]
+    [HttpGet("api/auth/get_byusername")]
     public ActionResult GetUser(string USERNAME)
     {
         try
         {
             User u = AuthService.GetUser(USERNAME);
+            return new OkObjectResult(u);
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
+    
+    [HttpGet("api/auth/get_byid")]
+    public ActionResult GetUser(int ID)
+    {
+        try
+        {
+            User u = AuthService.GetUser(ID);
             return new OkObjectResult(u);
         }
         catch (NGMServiceExeption e)

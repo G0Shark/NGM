@@ -11,7 +11,7 @@ public class ChatHub : Hub
         if (MessagingService.IsMessageExists(ID))
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Сообщения не существует."));
-        }
+        } 
         
         Message msg = MessagingService.GetMessage(ID);
         
@@ -32,9 +32,9 @@ public class ChatHub : Hub
             string username = AuthService.TryLogin(httpContext.Request);
             User caller = AuthService.GetUser(username);
 
-            if (MessagingService.IsUserAreSender(ID, caller.ID))
+            if (!MessagingService.IsUserAreSender(ID, caller.ID))
             {
-                await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права изменять чужое сообщение."));
+                await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права удалять чужое сообщение."));
             }
             
             if (DMCHAT)
@@ -52,23 +52,28 @@ public class ChatHub : Hub
             }
             else
             {
-                var roles = RolesService.GetRolesOfUser(caller.ID, ChatsService.GetChat(msg.CHATID).SERVERID);
-                if (ChatsService.GetNeededRolesForChat(msg.CHATID) == "0")
+                Chat chat = ChatsService.GetChat(ID);
+                var roles = RolesService.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!RolesService.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !ServersService.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
-                    await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveUpdateMessage", ID);
-                    MessagingService.DeleteMessage(ID);
-                }
-                
-                foreach (string role in ChatsService.GetNeededRolesForChat(msg.CHATID).Split(' '))
-                {
-                    if (roles.First(x => x.ID == int.Parse(role)) != null)
+                    bool containsRole = false;
+                    foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveUpdateMessage", ID);
-                        MessagingService.DeleteMessage(ID);
+                        if (roles.Contains(RolesService.GetRole(int.Parse(roleId))))
+                        {
+                            containsRole = true;
+                        }
+                    }
+
+                    if (!containsRole)
+                    {
+                        await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату, т.к. в нём нет вашей роли."));
                     }
                 }
                 
-                await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату."));
+                await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveDeleteMessage", ID);
+                MessagingService.DeleteMessage(ID);
             }
         }
         catch (NGMServiceExeption e)
@@ -128,23 +133,28 @@ public class ChatHub : Hub
             }
             else
             {
-                var roles = RolesService.GetRolesOfUser(caller.ID, ChatsService.GetChat(msg.CHATID).SERVERID);
-                if (ChatsService.GetNeededRolesForChat(msg.CHATID) == "0")
+                Chat chat = ChatsService.GetChat(ID);
+                var roles = RolesService.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!RolesService.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !ServersService.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
-                    await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveUpdateMessage", ID, NEWMESSAGE);
-                    MessagingService.EditMessage(ID, NEWMESSAGE);
-                }
-                
-                foreach (string role in ChatsService.GetNeededRolesForChat(msg.CHATID).Split(' '))
-                {
-                    if (roles.First(x => x.ID == int.Parse(role)) != null)
+                    bool containsRole = false;
+                    foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveUpdateMessage", ID, NEWMESSAGE);
-                        MessagingService.EditMessage(ID, NEWMESSAGE);
+                        if (roles.Contains(RolesService.GetRole(int.Parse(roleId))))
+                        {
+                            containsRole = true;
+                        }
+                    }
+
+                    if (!containsRole)
+                    {
+                        await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату, т.к. в нём нет вашей роли."));
                     }
                 }
                 
-                await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату."));
+                await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveUpdateMessage", ID, NEWMESSAGE);
+                MessagingService.EditMessage(ID, NEWMESSAGE);
             }
         }
         catch (NGMServiceExeption e)
@@ -155,6 +165,10 @@ public class ChatHub : Hub
     
     public async Task Send(int ID, string MESSAGE, int REPLYFORID, bool DMCHAT)
     {
+        if (!DMCHAT && !ChatsService.IsChatExists(ID))
+        {
+            await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данного чата не существует."));
+        }
         if (!DMCHAT && ChatsService.GetChat(ID).TYPE != "TEXT")
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
@@ -192,23 +206,28 @@ public class ChatHub : Hub
             }
             else
             {
-                var roles = RolesService.GetRolesOfUser(caller.ID, ChatsService.GetChat(ID).SERVERID);
-                if (ChatsService.GetNeededRolesForChat(ID) == "0")
+                Chat chat = ChatsService.GetChat(ID);
+                var roles = RolesService.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!RolesService.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !ServersService.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
-                    await Clients.Group(ID.ToString()).SendAsync("ReceiveMessage", caller, MESSAGE);
-                    MessagingService.SendMessage(ID, caller.ID, MESSAGE, REPLYFORID, DMCHAT);
-                }
-                
-                foreach (string role in ChatsService.GetNeededRolesForChat(ID).Split(' '))
-                {
-                    if (roles.First(x => x.ID == int.Parse(role)) != null)
+                    bool containsRole = false;
+                    foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        await Clients.Group(ID.ToString()).SendAsync("ReceiveMessage", caller, MESSAGE);
-                        MessagingService.SendMessage(ID, caller.ID, MESSAGE, REPLYFORID, DMCHAT);
+                        if (roles.Contains(RolesService.GetRole(int.Parse(roleId))))
+                        {
+                            containsRole = true;
+                        }
+                    }
+
+                    if (!containsRole)
+                    {
+                        await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату, т.к. в нём нет вашей роли."));
                     }
                 }
                 
-                await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату."));
+                await Clients.Group(ID.ToString()).SendAsync("ReceiveMessage", caller, MESSAGE);
+                MessagingService.SendMessage(ID, caller.ID, MESSAGE, REPLYFORID, DMCHAT);
             }
         }
         catch (NGMServiceExeption e)

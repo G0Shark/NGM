@@ -38,7 +38,7 @@ public class ServersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int userID = AuthService.GetUser(username).ID;
 
-            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") ||
+            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") &&
                 !ServersService.IsOwner(ID, userID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -62,7 +62,7 @@ public class ServersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int userID = AuthService.GetUser(username).ID;
             
-            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") ||
+            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") &&
                 !ServersService.IsOwner(ID, userID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -86,7 +86,7 @@ public class ServersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int userID = AuthService.GetUser(username).ID;
 
-            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") ||
+            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") &&
                 !ServersService.IsOwner(ID, userID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -110,7 +110,7 @@ public class ServersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int userID = AuthService.GetUser(username).ID;
 
-            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") ||
+            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") &&
                 !ServersService.IsOwner(ID, userID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -134,7 +134,7 @@ public class ServersController : ControllerBase
             string username = AuthService.TryLogin(Request);
             int userID = AuthService.GetUser(username).ID;
 
-            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") ||
+            if (!RolesService.IsUserHavePermission(userID, ID, "ADMIN") &&
                 !ServersService.IsOwner(ID, userID))
             {
                 return new UnauthorizedObjectResult("Нет доступа");
@@ -168,6 +168,33 @@ public class ServersController : ControllerBase
             MembersService.DeleteAllMembersOfServer(ID);
             
             return new OkObjectResult("Сервер удалён");
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
+    
+    [HttpGet("api/servers/get_byname")]
+    public ActionResult GetServer(string NAME)
+    {
+        try
+        {
+            Server server = ServersService.GetServer(NAME);
+            return new OkObjectResult(server);
+        }
+        catch (NGMServiceExeption e)
+        {
+            return e.Res;
+        }
+    }
+    
+    [HttpGet("api/servers/get_all")]
+    public ActionResult GetServers()
+    {
+        try
+        {
+            return new OkObjectResult(ServersService.GetServers());
         }
         catch (NGMServiceExeption e)
         {

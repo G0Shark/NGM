@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-
 namespace NGM_Client
 {
 
@@ -14,6 +13,12 @@ namespace NGM_Client
         
         static async Task Main(string[] args)
         {
+
+
+
+            ScreenCatcher sc=new ScreenCatcher();
+            sc.CaptureScreen();
+
 
             string username, password;
             Console.WriteLine("Username: ");

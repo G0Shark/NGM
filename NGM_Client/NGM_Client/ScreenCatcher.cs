@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-//using System.Text;
-using System.Threading.Tasks;
+﻿using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
+using System;
+
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Net.Sockets;
-using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
-using System.IO.Compression;
-using H264Sharp;
-using H264SharpBitmapExtentions;
-using System.IO;
-using System.Drawing.Imaging;
+using System.Text;
+//using SixLabors.ImageSharp;
+//using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors.Quantization;
 namespace NGM_Client
 {
     class ScreenCatcher
@@ -22,13 +18,9 @@ namespace NGM_Client
         int y;
         int w;
         int h;
-        RgbImage rgbIn;
-        RgbImage rgbOut;
-        H264Encoder encoder;
-        H264Decoder decoder;
 
 
-
+        WebpEncoder webpEncoder;
 
         public ScreenCatcher()
         {
@@ -37,94 +29,21 @@ namespace NGM_Client
             y = screen.Top;
             w = screen.Width;
             h = screen.Height ;
-            
-            encoder = new H264Encoder();
-            decoder = new H264Decoder();
-            decoder.Initialize();
-            encoder.Initialize(w, h, 200_000_000, 30, ConfigType.ScreenCaptureAdvanced);
 
-            rgbOut = new RgbImage(H264Sharp.ImageFormat.Rgb, w, h);
-
+            webpEncoder = new WebpEncoder
+            {
+                Quality = 10,                     // Минимальное качество
+                Method = WebpEncodingMethod.Level6, // Максимальное сжатие
+                UseAlphaCompression = false,       // Отключить, если нет прозрачности
+                SkipMetadata = true,               // Удалить EXIF, комментарии и т.д.
+                EntropyPasses = 5,                // Максимальное количество проходов
+                SpatialNoiseShaping = 100,        // Агрессивное подавление шума
+                FilterStrength = 100              // Максимальная фильтрация
+            };
 
         }
 
-        /*
-        public void EncodeImageToH264(Bitmap bitmap)
-        {
-           
 
-            // Преобразуем изображение в массив байтов (формат RGB24)
-            var imageData = new byte[bitmap.Width * bitmap.Height * 3];
-            int index = 0;
-            for (int y = 0; y < bitmap.Height; y++)
-            {
-                for (int x = 0; x < bitmap.Width; x++)
-                {
-                    var pixel = bitmap.GetPixel(x, y);
-                    imageData[index++] = pixel.R;
-                    imageData[index++] = pixel.G;
-                    imageData[index++] = pixel.B;
-                }
-            }
-
-            // Кодируем изображение как один кадр видео
-            var encodedFrame = encoder.Encode(imageData, bitmap.Width, bitmap.Height);
-
-            // Сохраняем результат в файл
-           //File.WriteAllBytes(outputVideoPath, encodedFrame);
-        }
-        */
-
-        private byte[] ConvertBitmapToRgb24(Bitmap bitmap)
-        {
-            var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
-            var bitmapData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-
-            try
-            {
-                int bytes = Math.Abs(bitmapData.Stride) * bitmap.Height;
-                byte[] rgbValues = new byte[bytes];
-                System.Runtime.InteropServices.Marshal.Copy(bitmapData.Scan0, rgbValues, 0, bytes);
-                return rgbValues;
-            }
-            finally
-            {
-                bitmap.UnlockBits(bitmapData);
-            }
-        }
-
-        List<byte[]> Encode(Bitmap image)
-        {
-            
-            //image = new Bitmap("C:\\Users\\okhobot\\Downloads\\ege\\00038.png");
-            RgbImage source = new RgbImage(H264Sharp.ImageFormat.Rgb, w, h, BitmapExtensions.BitmapToRawBytes(image));
-
-            List<byte[]> encodedFrames = new List<byte[]>();
-
-            if (!encoder.Encode(source, out EncodedData[] ec))
-            {
-                foreach (var encoded in ec)
-                {
-                    encodedFrames.Add(encoded.GetBytes());
-                }
-            }
-            return encodedFrames;
-        }
-
-        RgbImage Decode(List<byte[]> encodedFrames)
-        {
-
-            RgbImage rgb = new RgbImage(H264Sharp.ImageFormat.Rgb, w, h);
-            foreach (byte[] encoded in encodedFrames)
-            {
-                if (decoder.Decode(encoded, 0, encoded.Length, noDelay: true, out DecodingState ds, ref rgb))
-                {
-                    // Do something with rgb
-                }
-            }
-            return rgb;
-        }
-        
 
 
         public byte[] CaptureScreen()
@@ -144,23 +63,27 @@ namespace NGM_Client
             outputStream.Write(b);
             outputStream.Close();
 
-
-
-
             */
-            byte[] res = ( Decode(Encode(image)).GetBytes());
+            //Console.WriteLine(ImageToByte(image).Length);
 
-            Console.WriteLine(ImageToByte(image).Length);
+            byte[] res= FastWebPCompress(PreprocessImage(ConvertBitmapToImageSharp(image),1920 / 2,1080 / 2));
+            //res = GetMaxCompressedWebP("C:\\Users\\okhobot\\Downloads\\ege\\00038.png");
             Console.WriteLine(res.Length);
 
             ///string picturesDirectory = "C:\\Oleg\\git\\NGM\\NGM_Client\\NGM_Client\\";
-            ///res.Save(picturesDirectory + "test.png", System.Drawing.Imaging.ImageFormat.Png);
+            ///image.Save(picturesDirectory + "test.png", System.Drawing.Imaging.ImageFormat.Png);
 
             //image.Save(picturesDirectory+"test.png", ImageFormat.Png);
             //Console.WriteLine("saved");
 
 
-            return ImageToByte(image);
+            return res;
+        }
+        public byte[] GetMaxCompressedWebP(string imagePath)
+        {
+            using var image = SixLabors.ImageSharp.Image.Load(imagePath);
+            var processed = PreprocessImage(image,1920,1080);
+            return FastWebPCompress(processed);
         }
         public static byte[] ImageToByte(Bitmap img)
         {
@@ -186,9 +109,61 @@ namespace NGM_Client
             return res;
         }
 
+
+        public SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32> ConvertBitmapToImageSharp(Bitmap bitmap)
+        {
+            using var memoryStream = new MemoryStream();
+
+            // Сохраняем Bitmap в поток как PNG
+            bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            // Загружаем из потока в ImageSharp
+            return SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(memoryStream);
+        }
+
+        /*
+        public byte[] AdaptiveCompress(SixLabors.ImageSharp.Image image, int targetSizeKB)
+        {
+            int quality = 90;
+            byte[] result;
+
+            do
+            {
+                result = FastWebPCompress(image, quality);
+                quality -= 5;
+            }
+            while (result.Length > targetSizeKB * 1024 && quality > 10);
+
+            return result;
+        }
+        */
+
         
 
+        public byte[] FastWebPCompress(SixLabors.ImageSharp.Image image)
+        {
+            using var ms = new MemoryStream();
+            image.Save(ms, webpEncoder); // Переиспользуем encoder
+            return ms.ToArray();
+        }
+        public SixLabors.ImageSharp.Image PreprocessImage(SixLabors.ImageSharp.Image image, int maxWidth, int maxHeight)
+        {
 
+            // Автоматическое уменьшение разрешения
+            if (image.Width > maxWidth || image.Height > maxHeight)
+            {
+                var options = new ResizeOptions
+                {
+                    Mode = ResizeMode.Max,
+                    Size = new SixLabors.ImageSharp.Size(maxWidth, maxHeight)
+                };
+
+                return image.Clone(x => x.Resize(options));
+            }
+
+            return image;
+        }
 
     }
 }

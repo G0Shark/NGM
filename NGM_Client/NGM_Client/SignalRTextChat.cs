@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR.Client;
 namespace NGM_Client
 {
-    class SignalRTextChat
+    public class SignalRTextChat
     {
         HubConnection hubConnectionText;
 

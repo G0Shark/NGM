@@ -10,7 +10,7 @@ using System.Threading.Channels;
 using System.Security.Cryptography;
 namespace NGM_Client
 {
-    class DataWrapper
+    public class DataWrapper
     {
         private OpusEncoder Encoder;
         private OpusDecoder Decoder;

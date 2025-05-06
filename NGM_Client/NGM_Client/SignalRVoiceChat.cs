@@ -20,8 +20,8 @@ using System.Windows.Forms;
 
 namespace NGM_Client
 {
-    
-    class SignalRVoiceChat
+
+    public class SignalRVoiceChat
     {
 
         protected class VoiceUser

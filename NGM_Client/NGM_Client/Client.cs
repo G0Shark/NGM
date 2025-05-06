@@ -21,7 +21,7 @@ namespace NGM_Client
         public Client (string _username, string _password)
         {
             username = _username;
-            password = _password;
+            password = DataWrapper.GetHashString(_password);
             client = new WClient(_username, _password);
             client.SetAuthorizationHeader("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password)));
         }
@@ -74,7 +74,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return user;
@@ -109,7 +109,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return user;
@@ -145,7 +145,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return user;
@@ -163,7 +163,7 @@ namespace NGM_Client
             }   
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return channel;
@@ -232,7 +232,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return result;
@@ -252,7 +252,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return messages;
@@ -279,7 +279,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return result;
@@ -335,7 +335,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return result;
@@ -394,7 +394,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return server;
@@ -413,7 +413,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return servers;
@@ -431,7 +431,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return result;
@@ -486,7 +486,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return result;
@@ -503,7 +503,7 @@ namespace NGM_Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(data);
+                throw ex;
             }
 
             return result;

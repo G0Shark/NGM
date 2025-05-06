@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace NGM_Client
 {
-    class Client
+    public class Client
     {
         string username, password;
         WClient client;

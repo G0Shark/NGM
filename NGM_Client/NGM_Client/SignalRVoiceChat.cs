@@ -16,6 +16,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Windows.Forms;
 
 namespace NGM_Client
 {
@@ -85,7 +86,7 @@ namespace NGM_Client
 
         ScreenCatcher sc;
 
-
+        System.Windows.Forms.Timer timer1;
 
         //private
         void AddVoiceUser(string id)
@@ -144,9 +145,23 @@ namespace NGM_Client
             sc = new ScreenCatcher();
 
             //micInput.StartRecording();
+
+            
         }
 
-        
+        private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            //Console.WriteLine(DateTime.Now.ToString());
+            //Console.WriteLine("e: "+e.BytesRecorded);
+            //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
+            if (hubConnectionVoice != null)
+                try
+                {
+                    await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), new byte[1000], DirectMessages);//dw.Encode(e.Buffer)
+                    //await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), (sc.CaptureScreen()), DirectMessages);
+                }
+                catch (Exception ex) { Console.WriteLine(ex.Message); }
+        }
 
 
         public void SetUserVolume(string uid, float val)
@@ -198,12 +213,14 @@ namespace NGM_Client
             });
             hubConnectionVoice.On<User, byte[]>("ReceiveVoice", async (caller, data) =>
             {
+                
                 OnReceiveVoice(caller.id.ToString(), data);
             });
 
             hubConnectionVoice.On<User, byte[]>("ReceiveScreen", async (caller, data) =>
             {
-                Console.WriteLine(caller.id.ToString());
+                Console.WriteLine(DateTime.Now.ToString());
+                //Console.WriteLine(caller.id.ToString());
                 OnReceiveScreen(caller.id.ToString(), data);
             });
 
@@ -221,6 +238,11 @@ namespace NGM_Client
             catch(Exception ex) { Console.WriteLine(ex.Message); return ex.Message; }
 
             micInput.StartRecording();
+
+            var timer = new System.Timers.Timer();
+            timer.Interval = 20; // 5 seconds
+            timer.Elapsed += Timer_Elapsed;
+            timer.Start();
 
             return "connected";
         }
@@ -247,7 +269,7 @@ namespace NGM_Client
         public void OnReceiveScreen(string a_id, byte[] data)
         {
             //if (userId == a_id) return;
-            Bitmap img= ScreenCatcher.ByteToImage(data);
+            Bitmap img= ScreenCatcher.ByteToImage((data));
             string picturesDirectory = "C:\\Oleg\\git\\NGM\\NGM_Client\\NGM_Client\\";
             img.Save(picturesDirectory + "test.png", ImageFormat.Png);
         }
@@ -277,14 +299,14 @@ namespace NGM_Client
         private async void Voice_Input(object sender, WaveInEventArgs e)
         {
 
-
+            //Console.WriteLine(DateTime.Now.ToString());
             //Console.WriteLine("e: "+e.BytesRecorded);
             //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
             if (hubConnectionVoice != null)
                 try
-                { 
+                {
                     await hubConnectionVoice.InvokeAsync("Send", int.Parse(channelId), dw.Encode(e.Buffer), DirectMessages);//dw.Encode(e.Buffer)
-                    await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), sc.CaptureScreen(), DirectMessages);
+                    //await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), (sc.CaptureScreen()), DirectMessages);
                 }
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
 

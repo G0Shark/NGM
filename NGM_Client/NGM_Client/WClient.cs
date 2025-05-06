@@ -20,7 +20,7 @@ using System.Diagnostics;
 
 namespace NGM_Client
 {
-    class WClient
+    public class WClient
     {
 
         

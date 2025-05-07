@@ -5,11 +5,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="7.1.1" />
+    <PackageReference Include="FFMpegSharp" Version="2.1.0" />
     <PackageReference Include="Google.Protobuf" Version="3.30.2" />
-    <PackageReference Include="H264Sharp" Version="1.6.0" />
     <PackageReference Include="MediaFileProcessor" Version="1.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.10" />
@@ -18,7 +20,9 @@
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="NAudio.Core" Version="2.2.1" />
     <PackageReference Include="OpusSharp" Version="1.0.4" />
+    <PackageReference Include="ScreenRecorderLib" Version="6.5.1" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+    <PackageReference Include="SkiaSharp" Version="3.119.0" />
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
 

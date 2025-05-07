@@ -4,11 +4,10 @@ using System;
 
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Text;
-//using SixLabors.ImageSharp;
-//using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors.Quantization;
+
+
+
+
 namespace NGM_Client
 {
     class ScreenCatcher
@@ -20,8 +19,6 @@ namespace NGM_Client
         int h;
 
 
-        WebpEncoder webpEncoder;
-
         public ScreenCatcher()
         {
             screen = System.Windows.Forms.SystemInformation.VirtualScreen;
@@ -29,17 +26,6 @@ namespace NGM_Client
             y = screen.Top;
             w = screen.Width;
             h = screen.Height ;
-
-            webpEncoder = new WebpEncoder
-            {
-                Quality = 10,                     // Минимальное качество
-                Method = WebpEncodingMethod.Level6, // Максимальное сжатие
-                UseAlphaCompression = false,       // Отключить, если нет прозрачности
-                SkipMetadata = true,               // Удалить EXIF, комментарии и т.д.
-                EntropyPasses = 5,                // Максимальное количество проходов
-                SpatialNoiseShaping = 100,        // Агрессивное подавление шума
-                FilterStrength = 100              // Максимальная фильтрация
-            };
 
         }
 
@@ -66,7 +52,10 @@ namespace NGM_Client
             */
             //Console.WriteLine(ImageToByte(image).Length);
 
-            byte[] res= FastWebPCompress(PreprocessImage(ConvertBitmapToImageSharp(image),1920 / 2,1080 / 2));
+            Console.WriteLine(ImageToByte(image).Length);
+
+            byte[] res= Encode(image,25L);
+
             //res = GetMaxCompressedWebP("C:\\Users\\okhobot\\Downloads\\ege\\00038.png");
             Console.WriteLine(res.Length);
 
@@ -79,18 +68,41 @@ namespace NGM_Client
 
             return res;
         }
-        public byte[] GetMaxCompressedWebP(string imagePath)
+
+
+        public byte[] Encode(Bitmap image, long quality = 70L)
         {
-            using var image = SixLabors.ImageSharp.Image.Load(imagePath);
-            var processed = PreprocessImage(image,1920,1080);
-            return FastWebPCompress(processed);
+            MemoryStream data =new MemoryStream();
+            var jpegEncoder = GetEncoder(ImageFormat.Jpeg);
+            var encoderParams = new EncoderParameters(1);
+            encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, quality); // 0-100 (меньше = сильнее сжатие)
+
+            image.Save("C:\\Oleg\\git\\NGM\\NGM_Client\\NGM_Client\\test.jpeg", jpegEncoder, encoderParams);
+            image.Save(data, jpegEncoder, encoderParams);
+            return data.ToArray();
+            
         }
+
+        public static ImageCodecInfo GetEncoder(ImageFormat format)
+        {
+            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
+
+            foreach (ImageCodecInfo codec in codecs)
+            {
+                if (codec.FormatID == format.Guid)
+                {
+                    return codec;
+                }
+            }
+            return null;
+        }
+
         public static byte[] ImageToByte(Bitmap img)
         {
 
             ImageConverter converter = new ImageConverter();
 
-            byte[] res=(byte[])converter.ConvertTo(img, typeof(byte[]));
+            byte[] res = (byte[])converter.ConvertTo(img, typeof(byte[]));
 
 
 
@@ -104,66 +116,9 @@ namespace NGM_Client
             {
                 res = new Bitmap(ms);
             }
-            
+
 
             return res;
         }
-
-
-        public SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32> ConvertBitmapToImageSharp(Bitmap bitmap)
-        {
-            using var memoryStream = new MemoryStream();
-
-            // Сохраняем Bitmap в поток как PNG
-            bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
-            memoryStream.Seek(0, SeekOrigin.Begin);
-
-            // Загружаем из потока в ImageSharp
-            return SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(memoryStream);
-        }
-
-        /*
-        public byte[] AdaptiveCompress(SixLabors.ImageSharp.Image image, int targetSizeKB)
-        {
-            int quality = 90;
-            byte[] result;
-
-            do
-            {
-                result = FastWebPCompress(image, quality);
-                quality -= 5;
-            }
-            while (result.Length > targetSizeKB * 1024 && quality > 10);
-
-            return result;
-        }
-        */
-
-        
-
-        public byte[] FastWebPCompress(SixLabors.ImageSharp.Image image)
-        {
-            using var ms = new MemoryStream();
-            image.Save(ms, webpEncoder); // Переиспользуем encoder
-            return ms.ToArray();
-        }
-        public SixLabors.ImageSharp.Image PreprocessImage(SixLabors.ImageSharp.Image image, int maxWidth, int maxHeight)
-        {
-
-            // Автоматическое уменьшение разрешения
-            if (image.Width > maxWidth || image.Height > maxHeight)
-            {
-                var options = new ResizeOptions
-                {
-                    Mode = ResizeMode.Max,
-                    Size = new SixLabors.ImageSharp.Size(maxWidth, maxHeight)
-                };
-
-                return image.Clone(x => x.Resize(options));
-            }
-
-            return image;
-        }
-
     }
 }

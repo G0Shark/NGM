@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspose.Imaging" Version="25.5.0" />
     <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="7.1.1" />
     <PackageReference Include="FFMpegSharp" Version="2.1.0" />
     <PackageReference Include="Google.Protobuf" Version="3.30.2" />

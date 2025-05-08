@@ -149,19 +149,7 @@ namespace NGM_Client
             
         }
 
-        private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            //Console.WriteLine(DateTime.Now.ToString());
-            //Console.WriteLine("e: "+e.BytesRecorded);
-            //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
-            if (hubConnectionVoice != null)
-                try
-                {
-                    await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), new byte[1000], DirectMessages);//dw.Encode(e.Buffer)
-                    //await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), (sc.CaptureScreen()), DirectMessages);
-                }
-                catch (Exception ex) { Console.WriteLine(ex.Message); }
-        }
+        
 
 
         public void SetUserVolume(string uid, float val)
@@ -239,9 +227,10 @@ namespace NGM_Client
 
             micInput.StartRecording();
 
+            
             var timer = new System.Timers.Timer();
-            timer.Interval = 20; // 5 seconds
-            timer.Elapsed += Timer_Elapsed;
+            timer.Interval = 20;
+            timer.Elapsed += SendScreen;
             timer.Start();
 
             return "connected";
@@ -311,6 +300,18 @@ namespace NGM_Client
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
 
         }
-
+        private async void SendScreen(object sender, ElapsedEventArgs e)
+        {
+            //Console.WriteLine(DateTime.Now.ToString());
+            //Console.WriteLine("e: "+e.BytesRecorded);
+            //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);
+            if (hubConnectionVoice != null)
+                try
+                {
+                    await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), sc.CaptureScreen(), DirectMessages);//dw.Encode(e.Buffer)
+                    //await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), (sc.CaptureScreen()), DirectMessages);
+                }
+                catch (Exception ex) { Console.WriteLine(ex.Message); }
+        }
     }
 }

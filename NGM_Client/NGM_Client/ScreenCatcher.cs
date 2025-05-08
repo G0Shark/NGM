@@ -1,5 +1,7 @@
 ﻿
 using Aspose.Imaging.ImageFilters.FilterOptions;
+using FFMpegCore.Pipes;
+using FFMpegCore;
 using SixLabors.ImageSharp.Formats.Webp;
 
 using SkiaSharp;
@@ -9,6 +11,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 
@@ -71,7 +74,8 @@ namespace NGM_Client
             //Encode();
             runStream = true;
             test();
-             //await test1();
+            //await test1();
+            //CompressAndReadStream();//Encode2();
 
             ///image = ByteToImage(res);
 
@@ -91,7 +95,73 @@ namespace NGM_Client
 
 
 
+        public static void CompressAndReadStream()
+        {
+            // Путь к ffmpeg.exe
+            string ffmpegPath = "ffmpeg.exe";
 
+            // Настройки процесса FFmpeg
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                Arguments = "-i pipe:0 -c:v libx264 -preset fast -f matroska pipe:1",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            // Запуск процесса FFmpeg
+            using (var ffmpegProcess = new Process { StartInfo = startInfo })
+            {
+                ffmpegProcess.Start();
+
+                // Поток для записи входных данных в FFmpeg
+                var inputStream = ffmpegProcess.StandardInput.BaseStream;
+
+                // Поток для чтения сжатых выходных данных из FFmpeg
+                var outputStream = ffmpegProcess.StandardOutput.BaseStream;
+
+                // Поток для чтения ошибок (может быть полезен для отладки)
+                var errorStream = ffmpegProcess.StandardError.BaseStream;
+
+                // Пример: асинхронное чтение ошибок
+                var errorTask = ffmpegProcess.StandardError.ReadToEndAsync();
+
+                // Пример обработки входных и выходных данных
+                // 1. Запись входных данных (например, из другого потока)
+                byte[] inputData = GetInputData(); // Ваш метод получения данных
+                inputStream.Write(inputData, 0, inputData.Length);
+                inputStream.Close();
+
+                // 2. Чтение сжатых выходных данных
+                using (var memoryStream = new MemoryStream())
+                {
+                    outputStream.CopyTo(memoryStream);
+                    byte[] compressedData = memoryStream.ToArray();
+
+                    // Далее можно работать с compressedData
+                    Console.WriteLine($"Получено {compressedData.Length} байт сжатых данных");
+                }
+
+                // Ожидание завершения FFmpeg
+                ffmpegProcess.WaitForExit();
+
+                // Проверка кода выхода
+                if (ffmpegProcess.ExitCode != 0)
+                {
+                    Console.WriteLine($"FFmpeg завершился с ошибкой: {errorTask.Result}");
+                }
+            }
+        }
+
+        private static byte[] GetInputData()
+        {
+            // Здесь должен быть ваш код для получения входных данных
+            // Например, чтение из файла или другого потока
+            return File.ReadAllBytes("i2.mp4");
+        }
 
         public void Encode()
         {
@@ -121,12 +191,14 @@ namespace NGM_Client
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = "-f gdigrab -framerate 60 -i desktop -pix_fmt yuv420p -f segment -segment_time 1 -reset_timestamps 1 -vcodec libx264 -crf 28 tmp%03d.mp4",
+                    Arguments = "-f gdigrab -framerate 60 -i desktop -pix_fmt yuv420p -f segment -segment_time 1 -reset_timestamps 1 -vcodec libx264 -crf 28 -g 60 pipe:1",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
             ffmpegProcess.Start();
+
+            byte[] data=File.ReadAllBytes("tmp.mp4");
 
             ffmpegProcess.WaitForExit();
         }
@@ -161,7 +233,7 @@ namespace NGM_Client
 
                 await chunkStream.WriteAsync(buffer, 0, bytesRead);
 
-                if (watch.Elapsed.TotalSeconds >= 2)
+                if (watch.Elapsed.TotalSeconds >= 1)
                 {
                     await SaveChunk(chunkStream.ToArray(), "mp4"); // Сохраняем как .ts
                     chunkStream.SetLength(0);
@@ -181,6 +253,7 @@ namespace NGM_Client
         }
 
 
+
         public void Encode2()
         {
             // Запускаем FFmpeg для сжатия потока
@@ -189,21 +262,39 @@ namespace NGM_Client
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = "-f gdigrab -framerate 60 -i desktop -t 00:00:02 -c:v libx264 -pix_fmt yuv420p -crf 28 output.mp4",//pipe:0
+                    Arguments = "-i pipe:0 -c:v libx264 -preset fast -f matroska pipe:1",//$"-i input.mp4 -vcodec libx264 -crf 28 -f mp4 pipe:1",//pipe:0
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = false
+                    RedirectStandardError = true
                 }
             };
 
+            
             ffmpegProcess.Start();
-            /*
-            // Пример: записываем выходной поток (можно заменить на любой Stream)
-            using (var outputStream = File.OpenWrite("output_compressed.mp4"))
+
+            
+            using (var inputFstream = File.OpenRead("input.mp4"))
             {
-                ffmpegProcess.StandardOutput.BaseStream.CopyTo(outputStream);
-            }*/
+                byte[] data=new byte[inputFstream.Length];
+                inputFstream.Read(data,0, data.Length);
+
+                ffmpegProcess.StandardInput.BaseStream.Write(data, 0, data.Length);
+                //Console.OpenStandardOutput().Write(data, 0, data.Length);
+                ffmpegProcess.StandardInput.BaseStream.Close();
+            }
+
+
+            // Пример: записываем выходной поток (можно заменить на любой Stream)
+            using (var memoryStream = new MemoryStream())
+            {
+                ffmpegProcess.StandardOutput.BaseStream.CopyTo(memoryStream);
+                byte[] data = memoryStream.ToArray();
+                File.WriteAllBytes("out.mp4", data);
+                // Далее можно работать с compressedData
+                Console.WriteLine($"Получено {data.Length} байт сжатых данных");
+            }
             //Thread.Sleep(100);
             //ffmpegProcess.StandardInput.WriteLine("q");
             ffmpegProcess.WaitForExit();

@@ -204,6 +204,11 @@ namespace NGM_Client
                 
                 OnReceiveVoice(caller.id.ToString(), data);
             });
+            /*hubConnectionVoice.StreamAsync<byte>
+                (
+                "stream",
+
+                )*/
 
             hubConnectionVoice.On<User, byte[]>("ReceiveScreen", async (caller, data) =>
             {
@@ -294,14 +299,15 @@ namespace NGM_Client
             if (hubConnectionVoice != null)
                 try
                 {
-                    await hubConnectionVoice.InvokeAsync("Send", int.Parse(channelId), dw.Encode(e.Buffer), DirectMessages);//dw.Encode(e.Buffer)
-                    //await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), (sc.CaptureScreen()), DirectMessages);
+                    await hubConnectionVoice.InvokeAsync("Send", int.Parse(channelId), dw.Encode(e.Buffer), DirectMessages);
+                    await hubConnectionVoice.InvokeAsync("SendScreen", int.Parse(channelId), sc.CaptureScreen(), DirectMessages);
                 }
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
 
         }
         private async void SendScreen(object sender, ElapsedEventArgs e)
         {
+            return;
             //Console.WriteLine(DateTime.Now.ToString());
             //Console.WriteLine("e: "+e.BytesRecorded);
             //Console.WriteLine(e.BytesRecorded+" "+ DataWrapper.Compress(e.Buffer).Length + " " + DataWrapper.Decompress(DataWrapper.Compress(e.Buffer)).Length);

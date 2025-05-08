@@ -17,7 +17,7 @@ namespace NGM_Client
 
 
             ScreenCatcher sc=new ScreenCatcher();
-            sc.CaptureScreen();
+            await sc.CaptureScreen();
 
 
             string username, password;

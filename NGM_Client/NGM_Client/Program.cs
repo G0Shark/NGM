@@ -24,7 +24,7 @@ namespace NGM_Client
             Console.WriteLine("Username: ");
             username =  Console.ReadLine();
             //Console.WriteLine("Password: ");
-            password = DataWrapper.GetHashString(Console.ReadLine());
+            password = Console.ReadLine();
 
 
             Client client = new Client(username, password);

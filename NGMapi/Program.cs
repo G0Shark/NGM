@@ -1,18 +1,25 @@
 //Привет мир!
 using System;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.RateLimiting;
+using LiveStreamingServerNet;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MySql.Data.MySqlClient;
 using Mysqlx;
+using NGM_Server_rebuild;
+using NGM_Server_rebuild.API.API_v1.MIddlewares;
 using NGM_Server_rebuild.Hubs;
 
 //Проверка на коннект, чтобы я не подключился к несуществующей дб
 try
 {
     //Если коннект нормальный, то всё ок.
-    var c = new MySqlConnection("server=localhost;user=root;database=ngm;");
+    var c = new MySqlConnection(gb.db);
     c.Open();
     c.Close();
 }
@@ -26,18 +33,74 @@ catch (Exception ex)
 //Конфигуратор
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddSignalR();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "NGM API v1", Version = "v1" });
+    // some other configs
+    options.AddSignalRSwaggerGen();
+    options.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
+    {
+        Description = "Basic auth added to authorization header",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Scheme = "basic",
+        Type = SecuritySchemeType.Http
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
+            },
+            new List<string>()
+        }
+    });
+});
+builder.Services.AddSignalR(hubOptions =>{    
+    hubOptions.MaximumReceiveMessageSize = null;
+});
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("origins",
+        policy =>
+        {
+            policy
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowAnyOrigin()
+                .SetIsOriginAllowed((host) => true);
+        });
+});
 builder.Services.AddControllers();
 builder.Services.AddRateLimiter(options => {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext => RateLimitPartition.GetFixedWindowLimiter(partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(), factory: partition => new FixedWindowRateLimiterOptions
+    /*options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext => RateLimitPartition.GetFixedWindowLimiter(partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(), factory: partition => new FixedWindowRateLimiterOptions
     {
         AutoReplenishment = true,
-        PermitLimit = 5,
+        PermitLimit = 50,
         QueueLimit = 0,
         Window = TimeSpan.FromMinutes(1)
-    }));
+    }));*/
 });
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "NGMApiV1",
+            
+            ValidateAudience = true,
+            ValidAudience = "NGMClient",
+            ValidateLifetime = true,
+            
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.ASCII
+                    .GetBytes("secret_ultra_key_mega3957239587weasjrgfhnolrv3uh")),
+            ValidateIssuerSigningKey = true
+        };
+    });
 
 
 //Создание приложения на основе конфигуратора
@@ -51,12 +114,13 @@ if (app.Environment.IsDevelopment())
 }
 app.UseDeveloperExceptionPage();
 app.UseHttpsRedirection();
-
+app.UseCors("origins");
 //Присоединение всех моих контроллеров и файлов
 app.MapControllers();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseRateLimiter();
 
 app.MapGet("/api/ping", () =>
@@ -67,6 +131,10 @@ app.MapGet("/api/ping", () =>
 //Маппинг SignalR хабов
 app.MapHub<ChatHub>("api/hubs/text"); //Все текстовые сообщения
 app.MapHub<VoiceHub>("api/hubs/voice"); //Все голосовые сообщения
+
+using var server = LiveStreamingServerBuilder.Create()
+    .Build();
+server.RunAsync(new IPEndPoint(IPAddress.Any, 5280));
 
 //Запуск приложения!
 app.Run();

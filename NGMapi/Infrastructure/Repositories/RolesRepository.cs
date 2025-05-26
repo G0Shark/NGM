@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild.Domain.Entities;
 
 namespace NGM_Server_rebuild.Services;
 
-public static class RolesService
+public static class RolesRepository
 {
     public static int GetLevelOfRole(int ID)
     {
@@ -355,13 +356,4 @@ public static class RolesService
             }
         }
     }
-}
-
-public class Role
-{
-    public int ID { get; set; }
-    public int SERVERID { get; set; }
-    public int LEVEL { get; set; }
-    public string PERMISSIONS { get; set; }
-    public string NAME { get; set; }
 }

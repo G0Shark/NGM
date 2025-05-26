@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild.Domain.Entities;
 
 namespace NGM_Server_rebuild.Services;
 
-public static class FriendshipService
+public static class FriendshipRepository
 {
     public static bool IsFriendshipExists(int SENDERID, int ACCEPTERID)
     {
@@ -333,12 +334,4 @@ public static class FriendshipService
             }
         }
     }
-}
-
-public class Friendship
-{
-    public int ID { get; set; }
-    public int SENDERID { get; set; }
-    public int ACCEPTERID { get; set; }
-    public int STATE { get; set; } 
 }

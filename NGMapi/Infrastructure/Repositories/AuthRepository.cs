@@ -3,11 +3,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
-using Object = Mysqlx.Expr.Object;
+using NGM_Server_rebuild;
+using NGM_Server_rebuild.Domain.Entities;
 
-namespace NGM_Server_rebuild.Services;
+namespace NGMapi.Infrastructure.Repositories;
 
-public static class AuthService
+public static class AuthRepository
 {
     public static bool IsValidEmail(string email)
     {
@@ -218,6 +219,50 @@ public static class AuthService
         
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
+            Console.WriteLine(USERNAME + " | " + PASSWORD);
+            connection.Open();
+            string checkQuery = "SELECT * FROM users WHERE USERNAME = @USERNAME AND PASSWORD = @PASSWORD";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+                checkCommand.Parameters.AddWithValue("@PASSWORD", PASSWORD);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return USERNAME;
+                    }
+                    else
+                    {
+                        throw new NGMServiceExeption(new UnauthorizedObjectResult("Неверные данные для входа"));
+                    }
+                }
+            }
+        }
+    }
+    
+    public static string TryLoginWithAuthStr(string authorizationHeader)
+    {
+        var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(authorizationHeader)).Split(':', 2);
+        
+        if (credentials.Length != 2)
+        {
+            throw new NGMServiceExeption(new UnauthorizedObjectResult("Auth Header неверное кол-во записей"));
+        }
+        
+        var USERNAME = credentials[0];
+        var PASSWORD = credentials[1];
+        
+        if (string.IsNullOrEmpty(USERNAME) || string.IsNullOrEmpty(PASSWORD))
+        {
+            throw new NGMServiceExeption(new BadRequestObjectResult("USERNAME или PASSWORD пусты"));
+        }
+        
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            Console.WriteLine(USERNAME + " | " + PASSWORD);
             connection.Open();
             string checkQuery = "SELECT * FROM users WHERE USERNAME = @USERNAME AND PASSWORD = @PASSWORD";
 
@@ -395,17 +440,17 @@ public static class AuthService
         throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
     }
     
-    public static void UpdateDisplayName(string USERNAME, string DESPLAYNAME)
+    public static void UpdateDisplayName(string USERNAME, string DISPLAYNAME)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
             connection.Open();
-            string checkQuery = "UPDATE users SET DESPLAYNAME = @DESPLAYNAME WHERE USERNAME = @USERNAME";
+            string checkQuery = "UPDATE users SET DISPLAYNAME = @DISPLAYNAME WHERE USERNAME = @USERNAME";
 
             using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
             {
                 checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-                checkCommand.Parameters.AddWithValue("@DESPLAYNAME", DESPLAYNAME);
+                checkCommand.Parameters.AddWithValue("@DISPLAYNAME", DISPLAYNAME);
 
                 int rowsAffected = checkCommand.ExecuteNonQuery();
                 if (rowsAffected > 0)
@@ -448,13 +493,4 @@ public static class AuthService
 
         throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
     }
-}
-
-public struct User
-{
-    public int ID { get; set; }
-    public string USERNAME { get; set; }
-    public string EMAIL { get; set; }
-    public string DISPLAYNAME { get; set; }
-    public string DESCRIPTION { get; set; }
 }

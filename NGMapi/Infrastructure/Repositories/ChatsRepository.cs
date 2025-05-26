@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild.Domain.Entities;
+using NGMapi.Domain.Entities;
 
 namespace NGM_Server_rebuild.Services;
 
-public static class ChatsService
+public static class ChatsRepository
 {
     public static bool IsChatExists(int ID)
     {
@@ -260,14 +262,4 @@ public static class ChatsService
             }
         }
     }
-}
-
-public class Chat
-{
-    public int ID { get; set; }
-    public int SERVERID { get; set; }
-    public string NAME { get; set; }
-    public string DESCRIPTION { get; set; }
-    public string TYPE { get; set; }
-    public string ROLEID { get; set; }
 }

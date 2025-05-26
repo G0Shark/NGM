@@ -2,5 +2,6 @@
 
 public static class gb
 {
-    public static string db = "server=localhost;user=root;database=ngm;";
+    public static string db = "server=localhost;user=root;database=ngmv1;";
+    public static string based_url = "api/";
 }

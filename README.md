@@ -1,8 +1,7 @@
-Hello NGM
+# Tauri + React + Typescript
 
-Олег тз:
-1. Поработай над всеми запросами, тобишь гет, пост и так далее
-2. Подготовь мне список всех нужных дб-шок, чтобы я их сразу начал делать
-3. сделай все для джесонов, ибо в будующем (конда сервак будет возвращать классы) они будут в виде джона, сделай себе функции их дешифровки и тд
+This template should help get you started developing with Tauri, React and Typescript in Vite.
 
-хз вроде все
+## Recommended IDE Setup
+
+- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)

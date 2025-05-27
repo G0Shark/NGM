@@ -1,8 +1,8 @@
 ﻿using HotChocolate.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild.Domain.Entities;
-using NGM_Server_rebuild.Services;
 using NGMapi.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 using NGMapi.Infrastructure.Repositories;
 
 namespace NGMapi.API.API_v1.Controllers;
@@ -12,36 +12,50 @@ namespace NGMapi.API.API_v1.Controllers;
 [Authorize]
 public class ChatsController : ControllerBase
 {
-    [HttpPost]
-    public ActionResult CreateChat(int SERVERID, string NAME, string DESCRIPTION, string TYPE, string ROLEID)
+    private readonly IServersRepository _serversRepository;
+    private readonly IRolesRepository _rolesRepository;
+    private readonly IAuthRepository _authRepository;
+    private readonly IChatsRepository _chatsRepository;
+
+    public ChatsController(IServersRepository SERVERS_REPOSITORY, IRolesRepository ROLES_REPOSITORY,
+        IAuthRepository AUTH_REPOSITORY, IChatsRepository CHATS_REPOSITORY)
     {
-        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
-        var roles = RolesRepository.GetRolesOfUser(userId, SERVERID);
+        _serversRepository = SERVERS_REPOSITORY;
+        _rolesRepository = ROLES_REPOSITORY;
+        _authRepository = AUTH_REPOSITORY;
+        _chatsRepository = CHATS_REPOSITORY;
+    }
+    
+    [HttpPost]
+    public ActionResult CreateChat(Chat chat)
+    {
+        int userId = _authRepository.GetUser(User.Identity.Name).ID;
+        var roles = _rolesRepository.GetRolesOfUser(userId, chat.SERVERID);
             
-        if (TYPE == "CHAT")
+        if (chat.TYPE == "CHAT")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, SERVERID, "CREATE_CHAT") &&
-                !ServersRepository.IsOwner(SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "CREATE_CHAT") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права создать текстовый чат");
             }
         }
-        if (TYPE == "VOICE")
+        if (chat.TYPE == "VOICE")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, SERVERID, "CREATE_VOICE") &&
-                !ServersRepository.IsOwner(SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "CREATE_VOICE") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права создать голосовой чат");
             }
         }
 
-        if (!RolesRepository.IsUserHavePermission(userId, SERVERID, "ADMIN") && 
-            !ServersRepository.IsOwner(SERVERID, userId) && ROLEID != "0")
+        if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") && 
+            !_serversRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
         {
             bool containsRole = false;
-            foreach (var roleId in ROLEID.Split(' '))
+            foreach (var roleId in chat.ROLEID.Split(' '))
             {
-                if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                 {
                     containsRole = true;
                 }
@@ -53,21 +67,21 @@ public class ChatsController : ControllerBase
             }
         }
         
-        ChatsRepository.MakeChat(SERVERID, NAME, DESCRIPTION, TYPE, ROLEID);
+        _chatsRepository.CreateChat(chat);
         return new OkObjectResult("Чат создан.");
     }
     
     [HttpDelete]
     public ActionResult DeleteChat(int ID)
     {
-        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
-        Chat chat = ChatsRepository.GetChat(ID);
-        var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
+        int userId = _authRepository.GetUser(User.Identity.Name).ID;
+        Chat chat = _chatsRepository.GetChat(ID);
+        var roles = _rolesRepository.GetRolesOfUser(userId, chat.SERVERID);
 
         if (chat.TYPE == "CHAT")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "DELETE_CHAT") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "DELETE_CHAT") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права удалить текстовый чат");
             }
@@ -75,20 +89,20 @@ public class ChatsController : ControllerBase
 
         if (chat.TYPE == "VOICE")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "DELETE_VOICE") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "DELETE_VOICE") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права удалить голосовой чат");
             }
         }
 
-        if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") &&
-            !ServersRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
+        if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") &&
+            !_serversRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
         {
             bool containsRole = false;
             foreach (var roleId in chat.ROLEID.Split(' '))
             {
-                if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                 {
                     containsRole = true;
                 }
@@ -100,22 +114,22 @@ public class ChatsController : ControllerBase
             }
         }
 
-        ChatsRepository.DeleteChat(ID);
+        _chatsRepository.DeleteChat(ID);
         return new OkObjectResult("Чат удалён.");
     }
     
     [HttpPatch("name")]
     public ActionResult ChangeName(int ID, string NAME)
     {
-        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
-        Chat chat = ChatsRepository.GetChat(ID);
+        int userId = _authRepository.GetUser(User.Identity.Name).ID;
+        Chat chat = _chatsRepository.GetChat(ID);
         string TYPE = chat.TYPE;
-        var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
+        var roles = _rolesRepository.GetRolesOfUser(userId, chat.SERVERID);
 
         if (TYPE == "CHAT")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_TEXT") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_TEXT") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права изменить текстовый чат");
             }
@@ -123,20 +137,20 @@ public class ChatsController : ControllerBase
 
         if (TYPE == "VOICE")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_VOICE") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_VOICE") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права изменить голосовой чат");
             }
         }
 
-        if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") &&
-            !ServersRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
+        if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") &&
+            !_serversRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
         {
             bool containsRole = false;
             foreach (var roleId in chat.ROLEID.Split(' '))
             {
-                if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                 {
                     containsRole = true;
                 }
@@ -148,22 +162,22 @@ public class ChatsController : ControllerBase
             }
         }
 
-        ChatsRepository.UpdateName(ID, NAME);
+        _chatsRepository.UpdateName(ID, NAME);
         return new OkObjectResult("Имя чата изменено.");
     }
     
     [HttpPatch("description")]
     public ActionResult ChangeDescription(int ID, string DESCRIPTION)
     {
-        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
-        Chat chat = ChatsRepository.GetChat(ID);
+        int userId = _authRepository.GetUser(User.Identity.Name).ID;
+        Chat chat = _chatsRepository.GetChat(ID);
         string TYPE = chat.TYPE;
-        var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
+        var roles = _rolesRepository.GetRolesOfUser(userId, chat.SERVERID);
 
         if (TYPE == "CHAT")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_TEXT") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_TEXT") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права изменить текстовый чат");
             }
@@ -171,20 +185,20 @@ public class ChatsController : ControllerBase
 
         if (TYPE == "VOICE")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_VOICE") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_VOICE") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права изменить голосовой чат");
             }
         }
 
-        if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") &&
-            !ServersRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
+        if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") &&
+            !_serversRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
         {
             bool containsRole = false;
             foreach (var roleId in chat.ROLEID.Split(' '))
             {
-                if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                 {
                     containsRole = true;
                 }
@@ -196,42 +210,42 @@ public class ChatsController : ControllerBase
             }
         }
 
-        ChatsRepository.UpdateDescription(ID, DESCRIPTION);
+        _chatsRepository.UpdateDescription(ID, DESCRIPTION);
         return new OkObjectResult("Описание чата изменено.");
     }
     
     [HttpPatch("roleid")]
     public ActionResult ChangeType(int ID, string ROLEID)
     {
-        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
-        Chat chat = ChatsRepository.GetChat(ID);
+        int userId = _authRepository.GetUser(User.Identity.Name).ID;
+        Chat chat = _chatsRepository.GetChat(ID);
         string oldTYPE = chat.TYPE;
-        var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
+        var roles = _rolesRepository.GetRolesOfUser(userId, chat.SERVERID);
 
         if (oldTYPE == "CHAT")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_TEXT") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_TEXT") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права изменить текстовый чат");
             }
         }
         if (oldTYPE == "VOICE")
         {
-            if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_VOICE") &&
-                !ServersRepository.IsOwner(chat.SERVERID, userId))
+            if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "UPDATE_VOICE") &&
+                !_serversRepository.IsOwner(chat.SERVERID, userId))
             {
                 return new UnauthorizedObjectResult("Нет права изменить голосовой чат");
             }
         }
         
-        if (!RolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") && 
-            !ServersRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
+        if (!_rolesRepository.IsUserHavePermission(userId, chat.SERVERID, "ADMIN") && 
+            !_serversRepository.IsOwner(chat.SERVERID, userId) && chat.ROLEID != "0")
         {
             bool containsRole = false;
             foreach (var roleId in chat.ROLEID.Split(' '))
             {
-                if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                 {
                     containsRole = true;
                 }
@@ -243,20 +257,20 @@ public class ChatsController : ControllerBase
             }
         }
         
-        ChatsRepository.UpdateRoles(ID, ROLEID);
+        _chatsRepository.UpdateRoles(ID, ROLEID);
         return new OkObjectResult("Роли чата изменены.");
     }
     
     [HttpGet("get_byid")]
     public ActionResult<Chat> GetChat(int ID)
     {
-        Chat chat = ChatsRepository.GetChat(ID);
+        Chat chat = _chatsRepository.GetChat(ID);
         return new OkObjectResult(chat);
     }
     
     [HttpGet("get_byserverid")]
     public ActionResult<Chat> GetChats(int SERVERID)
     {
-        return new OkObjectResult(ChatsRepository.GetChats(SERVERID));
+        return new OkObjectResult(_chatsRepository.GetChats(SERVERID));
     }
 }

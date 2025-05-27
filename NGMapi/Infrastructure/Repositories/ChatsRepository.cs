@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
-using NGM_Server_rebuild.Domain.Entities;
+using NGM_Server_rebuild;
 using NGMapi.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 
-namespace NGM_Server_rebuild.Services;
+namespace NGMapi.Infrastructure.Repositories;
 
-public static class ChatsRepository
+public class ChatsRepository : IChatsRepository
 {
-    public static bool IsChatExists(int ID)
+    public bool IsChatExists(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -33,17 +34,8 @@ public static class ChatsRepository
         }
     }
     
-    public static void MakeChat(int SERVERID, string NAME, string DESCRIPTION, string TYPE, string ROLEID)
+    public void CreateChat(Chat chat)
     {
-        if (string.IsNullOrEmpty(ROLEID))
-        {
-            ROLEID = "0";
-        }
-        if (string.IsNullOrEmpty(NAME))
-        {
-            throw new NGMServiceExeption(new ConflictObjectResult("NAME не может быть пустым"));
-        }
-        
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
             connection.Open();
@@ -51,26 +43,22 @@ public static class ChatsRepository
 
             using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
             {
-                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
-                insertCommand.Parameters.AddWithValue("@NAME", NAME);
-                insertCommand.Parameters.AddWithValue("@DESCRIPTION", DESCRIPTION);
-                insertCommand.Parameters.AddWithValue("@TYPE", TYPE);
-                insertCommand.Parameters.AddWithValue("@ROLEID", ROLEID);
+                insertCommand.Parameters.AddWithValue("@SERVERID", chat.SERVERID);
+                insertCommand.Parameters.AddWithValue("@NAME", chat.NAME);
+                insertCommand.Parameters.AddWithValue("@DESCRIPTION", chat.DESCRIPTION);
+                insertCommand.Parameters.AddWithValue("@TYPE", chat.TYPE);
+                insertCommand.Parameters.AddWithValue("@ROLEID", chat.ROLEID);
 
                 int rowsAffected = insertCommand.ExecuteNonQuery();
                 if (rowsAffected > 0)
-                {
                     throw new NGMServiceExeption(new OkObjectResult("Чат создан"));
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
+                
+                throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
             }
         }
     }
     
-    public static void DeleteChat(int ID)
+    public void DeleteChat(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -94,7 +82,7 @@ public static class ChatsRepository
         }
     }
     
-    public static void UpdateName(int ID, string NAME)
+    public void UpdateName(int ID, string NAME)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -119,7 +107,7 @@ public static class ChatsRepository
         }
     }
     
-    public static void UpdateDescription(int ID, string DESCRIPTION)
+    public void UpdateDescription(int ID, string DESCRIPTION)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -144,7 +132,7 @@ public static class ChatsRepository
         }
     }
     
-    public static void UpdateRoles(int ID, string ROLEID)
+    public void UpdateRoles(int ID, string ROLEID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -169,7 +157,7 @@ public static class ChatsRepository
         }
     }
     
-    public static Chat[] GetChats(int SERVERID)
+    public Chat[] GetChats(int SERVERID)
     {
         List<Chat> chats = new List<Chat>();
         
@@ -203,7 +191,7 @@ public static class ChatsRepository
         return chats.ToArray();
     }
     
-    public static string GetNeededRolesForChat(int ID)
+    public string GetRolesForChat(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -229,7 +217,7 @@ public static class ChatsRepository
         }
     }
     
-    public static Chat GetChat(int ID)
+    public Chat GetChat(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {

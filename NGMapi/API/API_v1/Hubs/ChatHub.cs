@@ -1,44 +1,58 @@
-﻿using System.Text.Json;
+﻿using System.Security.Claims;
+using System.Text.Json;
+using HotChocolate.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
-using NGM_Server_rebuild.Services;
 using NGMapi.Domain.Entities;
-using NGMapi.Infrastructure.Repositories;
+using NGMapi.Domain.Interfaces;
 using SignalRSwaggerGen.Attributes;
 
-namespace NGM_Server_rebuild.Hubs;
+namespace NGMapi.API.API_v1.Hubs;
 
 [SignalRHub]
+[Authorize]
 public class ChatHub : Hub
 {
+    private readonly IMessagingRepository _messagingRepository;
+    private readonly IChatsRepository _chatsRepository;
+    private readonly IAuthRepository _authRepository;
+    private readonly IRolesRepository _rolesRepository;
+    private readonly IServersRepository _serversRepository;
+    private readonly IMembersRepository _membersRepository;
+
+    public ChatHub(IMessagingRepository MESSAGING_REPOSITORY, IChatsRepository CHATS_REPOSITORY, IAuthRepository AUTH_REPOSITORY, 
+        IRolesRepository ROLES_REPOSITORY, IServersRepository SERVERS_REPOSITORY, IMembersRepository MEMBERS_REPOSITORY)
+    {
+        _messagingRepository = MESSAGING_REPOSITORY;
+        _chatsRepository = CHATS_REPOSITORY;
+        _authRepository = AUTH_REPOSITORY;
+        _rolesRepository = ROLES_REPOSITORY;
+        _serversRepository = SERVERS_REPOSITORY;
+        _membersRepository = MEMBERS_REPOSITORY;
+    }
+
     public async Task Delete(string AUTH, int ID, bool DMCHAT)
     {
-        if (MessagingRepository.IsMessageExists(ID))
+        if (_messagingRepository.IsMessageExists(ID))
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Сообщения не существует."));
         } 
         
-        Message msg = MessagingRepository.GetMessage(ID);
+        Message msg = _messagingRepository.GetMessage(ID);
         
-        if (!DMCHAT && ChatsRepository.GetChat(msg.CHATID).TYPE != "TEXT")
+        if (!DMCHAT && _chatsRepository.GetChat(msg.CHATID).TYPE != "TEXT")
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
         }
         
         try
         {
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string username = AuthRepository.TryLoginWithAuthStr(AUTH);
-            User caller = AuthRepository.GetUser(username);
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
 
-            if (!MessagingRepository.IsUserAreSender(ID, caller.ID))
+            if (!_messagingRepository.IsUserAreSender(ID, caller.ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права удалять чужое сообщение."));
             }
@@ -47,26 +61,26 @@ public class ChatHub : Hub
             {
                 if (caller.ID > msg.CHATID)
                 {
-                    MessagingRepository.DeleteMessage(ID);
+                    _messagingRepository.DeleteMessage(ID);
                     await Clients.Group(caller.ID+"&"+msg.CHATID).SendAsync("ReceiveDeleteMessage", ID);
                 }
                 else
                 {
-                    MessagingRepository.DeleteMessage(ID);
+                    _messagingRepository.DeleteMessage(ID);
                     await Clients.Group(msg.CHATID+"&"+caller.ID).SendAsync("ReceiveDeleteMessage", ID);
                 }
             }
             else
             {
-                Chat chat = ChatsRepository.GetChat(ID);
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                Chat chat = _chatsRepository.GetChat(ID);
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -78,7 +92,7 @@ public class ChatHub : Hub
                     }
                 }
                 
-                MessagingRepository.DeleteMessage(ID);
+                _messagingRepository.DeleteMessage(ID);
                 await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveDeleteMessage", ID);
             }
         }
@@ -90,36 +104,29 @@ public class ChatHub : Hub
     
     public async Task Update(string AUTH, int ID, string NEWMESSAGE, bool DMCHAT)
     {
-        if (MessagingRepository.IsMessageExists(ID))
+        if (_messagingRepository.IsMessageExists(ID))
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Сообщения не существует."));
         }
         
-        Message msg = MessagingRepository.GetMessage(ID);
+        Message msg = _messagingRepository.GetMessage(ID);
         
-        if (!DMCHAT && ChatsRepository.GetChat(msg.CHATID).TYPE != "TEXT")
+        if (!DMCHAT && _chatsRepository.GetChat(msg.CHATID).TYPE != "TEXT")
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
         }
         
         try
         {
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string username = AuthRepository.TryLoginWithAuthStr(AUTH);
-            User caller = AuthRepository.GetUser(username);
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
 
-            if (MembersRepository.IsTextMuted(ChatsRepository.GetChat(ID).SERVERID, caller.ID))
+            if (_membersRepository.IsTextMuted(_chatsRepository.GetChat(ID).SERVERID, caller.ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Вы замьючены."));
             }
             
-            if (MessagingRepository.IsUserAreSender(ID, caller.ID))
+            if (_messagingRepository.IsUserAreSender(ID, caller.ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права изменять чужое сообщение."));
             }
@@ -128,26 +135,26 @@ public class ChatHub : Hub
             {
                 if (caller.ID > msg.CHATID)
                 {
-                    MessagingRepository.EditMessage(ID, NEWMESSAGE);
+                    _messagingRepository.EditMessage(ID, NEWMESSAGE);
                     await Clients.Group(caller.ID+"&"+msg.CHATID).SendAsync("ReceiveUpdateMessage", ID, NEWMESSAGE);
                 }
                 else
                 {
-                    MessagingRepository.EditMessage(ID, NEWMESSAGE);
+                    _messagingRepository.EditMessage(ID, NEWMESSAGE);
                     await Clients.Group(msg.CHATID+"&"+caller.ID).SendAsync("ReceiveUpdateMessage", ID, NEWMESSAGE);
                 }
             }
             else
             {
-                Chat chat = ChatsRepository.GetChat(ID);
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                Chat chat = _chatsRepository.GetChat(ID);
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -159,7 +166,7 @@ public class ChatHub : Hub
                     }
                 }
                 
-                MessagingRepository.EditMessage(ID, NEWMESSAGE);
+                _messagingRepository.EditMessage(ID, NEWMESSAGE);
                 await Clients.Group(msg.CHATID.ToString()).SendAsync("ReceiveUpdateMessage", ID, NEWMESSAGE);
             }
         }
@@ -169,14 +176,14 @@ public class ChatHub : Hub
         }
     }
     
-    public async Task Send(string AUTH, int ID, string MESSAGE, int REPLYFORID, bool DMCHAT)
+    public async Task Send(Message message)
     {
-        if (!DMCHAT && !ChatsRepository.IsChatExists(ID))
+        if (!message.DMCHAT && !_chatsRepository.IsChatExists(message.CHATID))
         {   
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данного чата не существует."));
             return;
         }
-        if (!DMCHAT && ChatsRepository.GetChat(ID).TYPE != "TEXT")
+        if (!message.DMCHAT && _chatsRepository.GetChat(message.CHATID).TYPE != "TEXT")
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
             return;
@@ -184,46 +191,39 @@ public class ChatHub : Hub
         
         try
         {
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
             
-            string username = AuthRepository.TryLoginWithAuthStr(AUTH);
-            User caller = AuthRepository.GetUser(username);
-            
-            if (MembersRepository.IsTextMuted(ChatsRepository.GetChat(ID).SERVERID, caller.ID))
+            if (_membersRepository.IsTextMuted(_chatsRepository.GetChat(message.CHATID).SERVERID, caller.ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Вы замьючены."));
                 return;
             }
 
-            if (DMCHAT)
+            if (message.DMCHAT)
             {
-                if (caller.ID > ID)
+                if (caller.ID > message.SENDERID)
                 {
-                    await Clients.Group(caller.ID + "&" + ID).SendAsync("ReceiveMessage", MessagingRepository.SendMessage(ID, caller.ID, MESSAGE, REPLYFORID, DMCHAT));
+                    await Clients.Group(caller.ID + "&" + message.SENDERID).SendAsync("ReceiveMessage", _messagingRepository.SendMessage(message));
                     return;
                 }
                 else
                 {
-                    await Clients.Group(ID+"&"+caller.ID).SendAsync("ReceiveMessage", MessagingRepository.SendMessage(ID, caller.ID, MESSAGE, REPLYFORID, DMCHAT));
+                    await Clients.Group(message.SENDERID+"&"+caller.ID).SendAsync("ReceiveMessage", _messagingRepository.SendMessage(message));
                     return;
                 }
             }
             else
             {
-                Chat chat = ChatsRepository.GetChat(ID);
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                Chat chat = _chatsRepository.GetChat(message.CHATID);
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -236,14 +236,9 @@ public class ChatHub : Hub
                     }
                 }
                 
-                Console.WriteLine("gfgfg");
-                Message msg = MessagingRepository.SendMessage(ID, caller.ID, MESSAGE, REPLYFORID, DMCHAT);
-                Console.WriteLine("gfgfg");
+                Message msg = _messagingRepository.SendMessage(message);
                 string jsontype = JsonSerializer.Serialize(msg);
-                Console.WriteLine(jsontype);
-                Console.WriteLine("gfgfg2");
-                await Clients.Group(ID.ToString()).SendAsync("ReceiveMessage", jsontype);
-                Console.WriteLine("gfgfg434");
+                await Clients.Group(message.CHATID.ToString()).SendAsync("ReceiveMessage", jsontype);
                 return;
             }
         }
@@ -258,22 +253,13 @@ public class ChatHub : Hub
     {
         Console.WriteLine(AUTH);
         
-        if (ChatsRepository.GetChat(ID).TYPE != "TEXT")
+        if (_chatsRepository.GetChat(ID).TYPE != "TEXT")
         {
             Console.WriteLine("d");
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
         }
-        
-        var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                Console.WriteLine("dd");
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string username = AuthRepository.TryLoginWithAuthStr(AUTH);
-            User caller = AuthRepository.GetUser(username);
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
             if (DMCHAT)
             {
                 if (caller.ID > ID)
@@ -289,15 +275,15 @@ public class ChatHub : Hub
             }
             else
             {
-                Chat chat = ChatsRepository.GetChat(ID);
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                Chat chat = _chatsRepository.GetChat(ID);
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -317,21 +303,13 @@ public class ChatHub : Hub
     
     public async Task Disconnect(string AUTH, int ID)
     {
-        if (ChatsRepository.GetChat(ID).TYPE != "TEXT")
+        if (_chatsRepository.GetChat(ID).TYPE != "TEXT")
         {
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
         }
         
         try
         {
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            AuthRepository.TryLoginWithAuthStr(AUTH);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, ID.ToString());
             await base.OnDisconnectedAsync(null);
         }

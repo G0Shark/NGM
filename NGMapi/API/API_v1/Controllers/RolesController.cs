@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
-using NGM_Server_rebuild.Services;
+using NGMapi.Domain.Interfaces;
 using NGMapi.Infrastructure.Repositories;
 
 namespace NGMapi.API.API_v1.Controllers;
@@ -12,134 +12,145 @@ namespace NGMapi.API.API_v1.Controllers;
 [Authorize]
 public class RolesController : ControllerBase
 {
-    [HttpPost]
-    public ActionResult CreateRole(int SERVERID, int LEVEL, string PERMISSIONS, string NAME)
-    {
-        int ID = AuthRepository.GetUser(User.Identity.Name).ID;
+    private readonly IAuthRepository _authRepository;
+    private readonly IServersRepository _serversRepository;
+    private readonly IRolesRepository _rolesRepository;
 
-        if (!RolesRepository.IsUserHavePermission(ID, SERVERID, "CREATE_ROLE") &&
-            !ServersRepository.IsOwner(SERVERID, ID))
+    public RolesController(IAuthRepository AUTH_REPOSITORY, IServersRepository SERVERS_REPOSITORY, IRolesRepository ROLES_REPOSITORY)
+    {
+        _authRepository = AUTH_REPOSITORY;
+        _serversRepository = SERVERS_REPOSITORY;
+        _rolesRepository = ROLES_REPOSITORY;
+    }
+
+    [HttpPost]
+    public ActionResult CreateRole(Role role)
+    {
+        int ID = _authRepository.GetUser(User.Identity.Name).ID;
+
+        if (!_rolesRepository.IsUserHavePermission(ID, role.SERVERID, "CREATE_ROLE") &&
+            !_serversRepository.IsOwner(role.SERVERID, ID))
         {
             return new UnauthorizedObjectResult("Нет доступа");
         }
 
-        if (LEVEL < RolesRepository.UserMaxLevel(ID, SERVERID) &&
-            !ServersRepository.IsOwner(SERVERID, ID))
+        if (role.LEVEL < _rolesRepository.UserMaxLevel(ID, role.SERVERID) &&
+            !_serversRepository.IsOwner(role.SERVERID, ID))
         {
             return new UnauthorizedObjectResult("Невозможно создать роль выше вашей");
         }
 
-        if (RolesRepository.IsLevelExists(SERVERID, LEVEL))
+        if (_rolesRepository.IsLevelExists(role.SERVERID, role.LEVEL))
         {
             return new BadRequestObjectResult("Уровень иерархии занят");
         }
             
-        RolesRepository.CreateRole(SERVERID, LEVEL, PERMISSIONS, NAME);
+        _rolesRepository.CreateRole(role);
         return new OkObjectResult("Роль создана");
     }
     
     [HttpDelete]
     public ActionResult DeleteRole(int ID)
     {
-        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
-        int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
+        int USERID = _authRepository.GetUser(User.Identity.Name).ID;
+        int SERVERID = _rolesRepository.GetServerIDByRoleID(ID);
 
             
-        if (!RolesRepository.IsUserHavePermission(USERID, SERVERID, "DELETE_ROLE") &&
-            !ServersRepository.IsOwner(SERVERID, USERID))
+        if (!_rolesRepository.IsUserHavePermission(USERID, SERVERID, "DELETE_ROLE") &&
+            !_serversRepository.IsOwner(SERVERID, USERID))
         {
             return new UnauthorizedObjectResult("Нет доступа");
         }
 
-        if (RolesRepository.GetLevelOfRole(ID) < RolesRepository.UserMaxLevel(USERID, SERVERID) &&
-            !ServersRepository.IsOwner(SERVERID, USERID))
+        if (_rolesRepository.GetLevelOfRole(ID) < _rolesRepository.UserMaxLevel(USERID, SERVERID) &&
+            !_serversRepository.IsOwner(SERVERID, USERID))
         {
             return new UnauthorizedObjectResult("Невозможно удалить роль выше вашей");
         }
 
 
-        RolesRepository.DeleteRole(ID);
+        _rolesRepository.DeleteRole(ID);
         return new OkObjectResult("Роль удаленна");
     }
     
     [HttpPatch("name")]
     public ActionResult ChangeName(int ID, string NAME)
     {
-        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int USERID = _authRepository.GetUser(User.Identity.Name).ID;
             
-        int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
+        int SERVERID = _rolesRepository.GetServerIDByRoleID(ID);
 
-        if (!RolesRepository.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
-            !ServersRepository.IsOwner(SERVERID, USERID))
+        if (!_rolesRepository.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
+            !_serversRepository.IsOwner(SERVERID, USERID))
         {
             return new UnauthorizedObjectResult("Нет доступа");
         }
 
-        if (RolesRepository.GetLevelOfRole(ID) < RolesRepository.UserMaxLevel(ID, SERVERID))
+        if (_rolesRepository.GetLevelOfRole(ID) < _rolesRepository.UserMaxLevel(ID, SERVERID))
         {
             return new UnauthorizedObjectResult("Невозможно изменить роль выше вашей");
         }
 
-        RolesRepository.ChangeName(ID, NAME);
+        _rolesRepository.ChangeName(ID, NAME);
         return new OkObjectResult("Имя измененно");
     }
 
     [HttpPatch("level")]
     public ActionResult ChangeLevel(int ID, int LEVEL)
     {
-        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int USERID = _authRepository.GetUser(User.Identity.Name).ID;
             
-        int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
+        int SERVERID = _rolesRepository.GetServerIDByRoleID(ID);
 
-        if (!RolesRepository.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
-            !ServersRepository.IsOwner(SERVERID, USERID))
+        if (!_rolesRepository.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
+            !_serversRepository.IsOwner(SERVERID, USERID))
         {
             return new UnauthorizedObjectResult("Нет доступа");
         }
 
-        if (RolesRepository.GetLevelOfRole(ID) < RolesRepository.UserMaxLevel(ID, SERVERID))
+        if (_rolesRepository.GetLevelOfRole(ID) < _rolesRepository.UserMaxLevel(ID, SERVERID))
         {
             return new UnauthorizedObjectResult("Невозможно изменить роль выше вашей");
         }
             
-        RolesRepository.ChangeLevel(ID, LEVEL);
+        _rolesRepository.ChangeLevel(ID, LEVEL);
         return new OkObjectResult("Уровень роли изменён");
     }
     
     [HttpPatch("permissions")]
     public ActionResult ChangePermissions(int ID, string PERMISSIONS)
     {
-        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int USERID = _authRepository.GetUser(User.Identity.Name).ID;
             
-        int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
+        int SERVERID = _rolesRepository.GetServerIDByRoleID(ID);
 
-        if (!RolesRepository.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
-            !ServersRepository.IsOwner(SERVERID, USERID))
+        if (!_rolesRepository.IsUserHavePermission(USERID, SERVERID, "CHANGE_ROLE") &&
+            !_serversRepository.IsOwner(SERVERID, USERID))
         {
             return new UnauthorizedObjectResult("Нет доступа");
         }
 
         foreach (var perm in PERMISSIONS.Split(' '))
         {
-            if (!RolesRepository.IsUserHavePermission(USERID, SERVERID, perm))
+            if (!_rolesRepository.IsUserHavePermission(USERID, SERVERID, perm))
             {
                 return new UnauthorizedObjectResult("У вас нет права, которое вы хотите дать");
             }
         }
             
-        if (RolesRepository.GetLevelOfRole(ID) < RolesRepository.UserMaxLevel(ID, SERVERID))
+        if (_rolesRepository.GetLevelOfRole(ID) < _rolesRepository.UserMaxLevel(ID, SERVERID))
         {
             return new UnauthorizedObjectResult("Невозможно изменить роль выше вашей");
         }
 
-        RolesRepository.ChangePermissions(ID, PERMISSIONS);
+        _rolesRepository.ChangePermissions(ID, PERMISSIONS);
         return new OkObjectResult("Права роли изменены");
     }
     
     [HttpGet("get_byid")]
     public ActionResult<Role> GetRole(int ID)
     {
-        Role role = RolesRepository.GetRole(ID);
+        Role role = _rolesRepository.GetRole(ID);
         return new OkObjectResult(role);
     }
 }

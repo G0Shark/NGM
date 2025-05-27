@@ -1,13 +1,14 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 
-namespace NGM_Server_rebuild.Services;
+namespace NGMapi.Infrastructure.Repositories;
 
-public static class MessagingRepository
+public class MessagingRepository : IMessagingRepository
 {
-    public static bool IsUserAreSender(int ID, int SENDERID)
+    public bool IsUserAreSender(int ID, int SENDERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -33,7 +34,7 @@ public static class MessagingRepository
         }
     }
     
-    public static bool IsMessageExists(int ID)
+    public bool IsMessageExists(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -58,7 +59,7 @@ public static class MessagingRepository
         }
     }
     
-    public static Message SendMessage(int CHATID, int SENDERID, string MESSAGE, int REPLYFORID, bool DMCHAT)
+    public Message SendMessage(Message message)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -67,11 +68,11 @@ public static class MessagingRepository
 
             using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
             {
-                insertCommand.Parameters.AddWithValue("@CHATID", CHATID);
-                insertCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
-                insertCommand.Parameters.AddWithValue("@MESSAGE", MESSAGE);
-                insertCommand.Parameters.AddWithValue("@REPLYFORID", REPLYFORID);
-                insertCommand.Parameters.AddWithValue("@DMCHAT", DMCHAT);
+                insertCommand.Parameters.AddWithValue("@CHATID", message.CHATID);
+                insertCommand.Parameters.AddWithValue("@SENDERID", message.SENDERID);
+                insertCommand.Parameters.AddWithValue("@MESSAGE", message.MESSAGE);
+                insertCommand.Parameters.AddWithValue("@REPLYFORID", message.REPLYFORID);
+                insertCommand.Parameters.AddWithValue("@DMCHAT", message.DMCHAT);
 
                 var reader = insertCommand.ExecuteReader();
                 if (reader.Read())
@@ -95,7 +96,7 @@ public static class MessagingRepository
         }
     }
     
-    public static void EditMessage(int ID, string NEWCONTENT)
+    public void EditMessage(int ID, string NEWCONTENT)
     {
         if (!IsMessageExists(ID))
         {
@@ -125,7 +126,7 @@ public static class MessagingRepository
         }
     }
     
-    public static void DeleteMessage(int ID)
+    public void DeleteMessage(int ID)
     {
         if (!IsMessageExists(ID))
         {
@@ -154,7 +155,7 @@ public static class MessagingRepository
         }
     }
 
-    public static Message[] GetMessages(int CHATID, bool DMCHAT)
+    public Message[] GetMessages(int CHATID, bool DMCHAT)
     {
         List<Message> messages = new List<Message>();
         
@@ -190,7 +191,7 @@ public static class MessagingRepository
         return messages.ToArray();
     }
     
-    public static Message[] GetMessagesFromDM(int CHATID1, int CHATID2)
+    public Message[] GetMessagesFromDM(int CHATID1, int CHATID2)
     {
         List<Message> messages = new List<Message>();
         
@@ -226,7 +227,7 @@ public static class MessagingRepository
         return messages.ToArray();
     }
     
-    public static Message GetMessage(int ID)
+    public Message GetMessage(int ID)
     {
         List<Message> messages = new List<Message>();
         

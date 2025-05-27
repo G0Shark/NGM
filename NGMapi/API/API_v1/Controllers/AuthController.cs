@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NGMapi.Application.Interfaces;
 using NGMapi.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 using NGMapi.Infrastructure.Repositories;
 
 namespace NGMapi.API.API_v1.Controllers;
@@ -10,20 +11,22 @@ namespace NGMapi.API.API_v1.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IPasswordHasher hasher;
-    private readonly IJwtGenerator jwtGenerator;
+    private readonly IPasswordHasher _hasher;
+    private readonly IJwtGenerator _jwtGenerator;
+    private readonly IAuthRepository _authRepository;
 
-    public AuthController(IPasswordHasher hasher, IJwtGenerator jwtGenerator)
+    public AuthController(IPasswordHasher HASHER, IJwtGenerator JWT_GENERATOR,  IAuthRepository AUTH_REPOSITORY)
     {
-        this.hasher = hasher;
-        this.jwtGenerator = jwtGenerator;
+        _hasher = HASHER;
+        _jwtGenerator = JWT_GENERATOR;
+        _authRepository = AUTH_REPOSITORY;
     }
 
     [HttpGet]
     public async Task<ActionResult<string>> GetJwtToken(string USERNAME, string PASSWORD, bool FOR_LONG)
     {
-        User u = AuthRepository.GetUserWithPassword(USERNAME);
-        if (!await hasher.VerifyPasswordAsync(PASSWORD, u.PASSWORD))
+        User u = _authRepository.GetUserWithPassword(USERNAME);
+        if (!await _hasher.VerifyPasswordAsync(PASSWORD, u.PASSWORD))
             return Unauthorized();
 
         DateTime time = DateTime.Now;
@@ -35,7 +38,7 @@ public class AuthController : ControllerBase
         
         var res = new
         {
-            token = jwtGenerator.GenerateJwt(jwtGenerator.GenerateIdentify(u), time),
+            token = _jwtGenerator.GenerateJwt(_jwtGenerator.GenerateIdentify(u), time),
             user = u
         };
         
@@ -43,9 +46,9 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost]
-    public async Task<ActionResult> Register(string USERNAME, string PASSWORD, string EMAIL, string? DISPLAYNAME, string? DESCRIPTION)
+    public async Task<ActionResult> Register(User user)
     {
-        AuthRepository.Register(USERNAME, await hasher.HashPasswordAsync(PASSWORD), EMAIL, DISPLAYNAME, DESCRIPTION);
+        _authRepository.Register(user);
         return Ok("Пользователь создан");
     }
 }

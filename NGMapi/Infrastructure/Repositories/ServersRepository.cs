@@ -1,14 +1,14 @@
-﻿using System.Security;
-using Google.Protobuf.WellKnownTypes;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 
-namespace NGM_Server_rebuild.Services;
+namespace NGMapi.Infrastructure.Repositories;
 
-public static class ServersRepository
+public class ServersRepository : IServersRepository
 {
-    public static bool TryJoinWithPassword(int ID, string JOINPASSWORD)
+    public bool TryJoinWithPassword(int ID, string JOINPASSWORD)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -34,7 +34,7 @@ public static class ServersRepository
             }
         }
     }
-    public static bool IsVisible(int ID)
+    public bool IsVisible(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -59,7 +59,7 @@ public static class ServersRepository
             }
         }
     }
-    public static bool IsServerExists(int ID)
+    public bool IsServerExists(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -85,7 +85,7 @@ public static class ServersRepository
         }
     }
     
-    public static bool IsServerExists(string NAME)
+    public bool IsServerExists(string NAME)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -111,7 +111,7 @@ public static class ServersRepository
         }
     }
     
-    public static Server GetServer(string NAME)
+    public Server GetServer(string NAME)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -146,7 +146,7 @@ public static class ServersRepository
         }
     }
     
-    public static Server GetServer(int SERVERID)
+    public Server GetServer(int SERVERID)
     {
         Console.WriteLine(SERVERID);
         using (MySqlConnection connection = new MySqlConnection(gb.db))
@@ -182,7 +182,7 @@ public static class ServersRepository
         }
     }
     
-    public static bool IsOwner(int ID, int OWNERID)
+    public bool IsOwner(int ID, int OWNERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -209,11 +209,11 @@ public static class ServersRepository
         }
     }
     
-    public static void Make(string NAME, string? DESCRIPTION, string JOINPASSWORD, bool VISIBLE, int OWNERID)
+    public void CreateServer(Server server)
     {
-        if (string.IsNullOrEmpty(DESCRIPTION))
+        if (string.IsNullOrEmpty(server.DESCRIPTION))
         {
-            DESCRIPTION = "Нет описания, ну думаю что это крутой сервер!";
+            server.DESCRIPTION = "Нет описания, ну думаю что это крутой сервер!";
         }
         
         using (MySqlConnection connection = new MySqlConnection(gb.db))
@@ -223,11 +223,11 @@ public static class ServersRepository
 
             using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
             {
-                insertCommand.Parameters.AddWithValue("@NAME", NAME);
-                insertCommand.Parameters.AddWithValue("@DESCRIPTION", DESCRIPTION);
-                insertCommand.Parameters.AddWithValue("@JOINPASSWORD", JOINPASSWORD);
-                insertCommand.Parameters.AddWithValue("@VISIBLE", VISIBLE);
-                insertCommand.Parameters.AddWithValue("@OWNERID", OWNERID);
+                insertCommand.Parameters.AddWithValue("@NAME", server.NAME);
+                insertCommand.Parameters.AddWithValue("@DESCRIPTION", server.DESCRIPTION);
+                insertCommand.Parameters.AddWithValue("@JOINPASSWORD", server.JOINPASSWORD);
+                insertCommand.Parameters.AddWithValue("@VISIBLE", server.VISIBLE);
+                insertCommand.Parameters.AddWithValue("@OWNERID", server.OWNERID);
 
                 int rowsAffected = insertCommand.ExecuteNonQuery();
                 if (rowsAffected > 0)
@@ -242,7 +242,7 @@ public static class ServersRepository
         }
     }
 
-    public static void ChangeName(int ID, string NAME)
+    public void ChangeName(int ID, string NAME)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -267,7 +267,7 @@ public static class ServersRepository
         }
     }
     
-    public static void ChangeDescription(int ID, string DESCRIPTION)
+    public void ChangeDescription(int ID, string DESCRIPTION)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -292,7 +292,7 @@ public static class ServersRepository
         }
     }
     
-    public static void ChangeOwner(int ID, int OWNERID)
+    public void ChangeOwner(int ID, int OWNERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -317,7 +317,7 @@ public static class ServersRepository
         }
     }
     
-    public static void ChangeJoinPassword(int ID, string JOINPASSWORD)
+    public void ChangeJoinPassword(int ID, string JOINPASSWORD)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -342,7 +342,7 @@ public static class ServersRepository
         }
     }
     
-    public static void ChangeVisible(int ID, bool VISIBLE)
+    public void ChangeVisible(int ID, bool VISIBLE)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -367,7 +367,7 @@ public static class ServersRepository
         }
     }
     
-    public static void Delete(int ID)
+    public void DeleteServer(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -391,7 +391,7 @@ public static class ServersRepository
         }
     }
 
-    public static Server[] GetServers()
+    public Server[] GetServers()
     {
         List<Server> servers = new List<Server>();
         

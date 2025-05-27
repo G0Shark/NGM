@@ -1,21 +1,16 @@
-﻿using K4os.Compression.LZ4.Internal;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
-using NGMapi.Infrastructure.Repositories;
+using NGMapi.Domain.Interfaces;
 
-namespace NGM_Server_rebuild.Services;
+namespace NGMapi.Infrastructure.Repositories;
 
 
-public static class MembersRepository
+public class MembersRepository : IMembersRepository
 {
-    public static void Create(int SERVERID, int USERID, string? DISPLAYNAME)
+    public void CreateMember(int SERVERID, int USERID, string DISPLAYNAME)
     {
-        if (string.IsNullOrEmpty(DISPLAYNAME))
-        {
-            DISPLAYNAME = AuthRepository.GetUser(USERID).DISPLAYNAME;
-        }
-        
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
             connection.Open();
@@ -41,7 +36,7 @@ public static class MembersRepository
         }
     }
     
-    public static void SetTextMute(int USERID, int SERVERID, bool VALUE)
+    public void SetTextMute(int USERID, int SERVERID, bool VALUE)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -67,7 +62,7 @@ public static class MembersRepository
         }
     }
     
-    public static void SetVoiceMute(int USERID, int SERVERID, bool VALUE)
+    public void SetVoiceMute(int USERID, int SERVERID, bool VALUE)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -93,7 +88,7 @@ public static class MembersRepository
         }
     }
 
-    public static bool IsMember(int SERVERID, int USERID)
+    public bool IsMember(int SERVERID, int USERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -118,7 +113,7 @@ public static class MembersRepository
         }
     }
     
-    public static bool IsTextMuted(int SERVERID, int USERID)
+    public bool IsTextMuted(int SERVERID, int USERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -143,7 +138,7 @@ public static class MembersRepository
         }
     }
     
-    public static bool IsVoiceMuted(int SERVERID, int USERID)
+    public bool IsVoiceMuted(int SERVERID, int USERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -167,31 +162,7 @@ public static class MembersRepository
             }
         }
     }
-    public static void Delete(int ID)
-    {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "DELETE FROM members WHERE ID=@ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
-    }
-    
-    public static void DeleteAllMembersOfServer(int SERVERID)
+    public void DeleteAllMembersOfServer(int SERVERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -215,7 +186,7 @@ public static class MembersRepository
         }
     }
     
-    public static void Delete(int SERVERID, int USERID)
+    public void Delete(int SERVERID, int USERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -240,7 +211,7 @@ public static class MembersRepository
         }
     }
     
-    public static void DeleteUser(int USERID)
+    public void DeleteUser(int USERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -264,7 +235,7 @@ public static class MembersRepository
         }
     }
 
-    public static Member GetMember(int ID)
+    public Member GetMember(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -299,7 +270,7 @@ public static class MembersRepository
         }
     }
 
-    public static Member[] GetMembersOfServer(int SERVERID)
+    public Member[] GetMembersOfServer(int SERVERID)
     {
         List<Member> members = new List<Member>();
         
@@ -334,7 +305,7 @@ public static class MembersRepository
         return members.ToArray();
     }
     
-    public static Member[] GetMembersOfUser(int USERID)
+    public Member[] GetMembersOfUser(int USERID)
     {
         List<Member> members = new List<Member>();
         

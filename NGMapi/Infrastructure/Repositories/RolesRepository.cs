@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
+using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 
-namespace NGM_Server_rebuild.Services;
+namespace NGMapi.Infrastructure.Repositories;
 
-public static class RolesRepository
+public class RolesRepository : IRolesRepository
 {
-    public static int GetLevelOfRole(int ID)
+    public int GetLevelOfRole(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -28,7 +30,7 @@ public static class RolesRepository
             }
         }
     }
-    public static int UserMaxLevel(int USERID, int SERVERID)
+    public int UserMaxLevel(int USERID, int SERVERID)
     {
         var roles = GetRolesOfUser(USERID, SERVERID);
         int level = 100000;
@@ -43,7 +45,7 @@ public static class RolesRepository
         
         return level;
     }
-    public static bool IsUserHavePermission(int USERID, int SERVERID, string PERMISSION)
+    public bool IsUserHavePermission(int USERID, int SERVERID, string PERMISSION)
     {
         var roles = GetRolesOfUser(USERID, SERVERID);
         bool hasPermission = false;
@@ -58,7 +60,7 @@ public static class RolesRepository
         
         return hasPermission;
     }
-    public static Role[] GetRolesOfUser(int USERID, int SERVERID)
+    public Role[] GetRolesOfUser(int USERID, int SERVERID)
     {
         List<Role> roles = new List<Role>();
         string roleIdsString = "";
@@ -126,7 +128,7 @@ public static class RolesRepository
             return roles.ToArray();
     }
     
-    public static Role GetRole(int ID)
+    public Role GetRole(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -156,7 +158,7 @@ public static class RolesRepository
         }
     }
     
-    public static bool IsLevelExists(int SERVERID, int LEVEL)
+    public bool IsLevelExists(int SERVERID, int LEVEL)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -182,7 +184,7 @@ public static class RolesRepository
         }
     }
     
-    public static int GetServerIDByRoleID(int ID)
+    public int GetServerIDByRoleID(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -207,7 +209,7 @@ public static class RolesRepository
         }
     }
     
-    public static void CreateRole(int SERVERID, int LEVEL, string PERMISSIONS, string NAME)
+    public void CreateRole(Role role)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -216,10 +218,10 @@ public static class RolesRepository
 
             using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
             {
-                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
-                insertCommand.Parameters.AddWithValue("@LEVEL", LEVEL);
-                insertCommand.Parameters.AddWithValue("@PERMISSIONS", PERMISSIONS);
-                insertCommand.Parameters.AddWithValue("@NAME", NAME);   
+                insertCommand.Parameters.AddWithValue("@SERVERID", role.SERVERID);
+                insertCommand.Parameters.AddWithValue("@LEVEL", role.LEVEL);
+                insertCommand.Parameters.AddWithValue("@PERMISSIONS", role.PERMISSIONS);
+                insertCommand.Parameters.AddWithValue("@NAME", role.NAME);   
 
                 int rowsAffected = insertCommand.ExecuteNonQuery();
                 if (rowsAffected > 0)
@@ -234,7 +236,7 @@ public static class RolesRepository
         }
     }
     
-    public static void DeleteRole(int ID)
+    public void DeleteRole(int ID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -258,7 +260,7 @@ public static class RolesRepository
         }
     }
 
-    public static void DeleteAllRolesOfServer(int SERVERID)
+    public void DeleteAllRolesOfServer(int SERVERID)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -282,7 +284,7 @@ public static class RolesRepository
         }
     }
     
-    public static void ChangeName(int ID, string NAME)
+    public void ChangeName(int ID, string NAME)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -307,7 +309,7 @@ public static class RolesRepository
         }
     }
     
-    public static void ChangeLevel(int ID, int LEVEL)
+    public void ChangeLevel(int ID, int LEVEL)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {
@@ -332,7 +334,7 @@ public static class RolesRepository
         }
     }
     
-    public static void ChangePermissions(int ID, string PERMISSIONS)
+    public void ChangePermissions(int ID, string PERMISSIONS)
     {
         using (MySqlConnection connection = new MySqlConnection(gb.db))
         {

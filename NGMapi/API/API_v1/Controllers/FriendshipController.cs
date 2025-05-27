@@ -1,7 +1,7 @@
 ﻿using HotChocolate.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild.Domain.Entities;
-using NGM_Server_rebuild.Services;
+using NGMapi.Domain.Interfaces;
 using NGMapi.Infrastructure.Repositories;
 
 namespace NGMapi.API.API_v1.Controllers;
@@ -11,20 +11,35 @@ namespace NGMapi.API.API_v1.Controllers;
 [Authorize]
 public class FriendshipController : ControllerBase
 {
+    private readonly IAuthRepository _authRepository;
+    private readonly IFriendshipRepository _friendshipRepository;
+
+    public FriendshipController(IAuthRepository AUTH_REPOSITORY, IFriendshipRepository FRIENDSHIP_REPOSITORY)
+    {
+        _authRepository = AUTH_REPOSITORY;
+        _friendshipRepository = FRIENDSHIP_REPOSITORY;
+    }
+    
     [HttpPost("make")]
     public ActionResult MakeFriendShip(int RECEIVERID)
     {
-        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int SENDERID = _authRepository.GetUser(User.Identity.Name).ID;
 
         if (SENDERID == RECEIVERID)
         {
             return new BadRequestObjectResult("Нельзя отправить запрос самому себе");
         }
             
-        if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
+        if (!_friendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !_friendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {
-            FriendshipRepository.MakeFriendship(SENDERID, RECEIVERID, 0);
-            FriendshipRepository.MakeFriendship(RECEIVERID, SENDERID, 0);
+            Friendship f = new Friendship();
+            f.SENDERID = SENDERID;
+            f.ACCEPTERID = RECEIVERID;
+            f.STATE = 0;
+            _friendshipRepository.CreateFriendship(f);
+            f.SENDERID = RECEIVERID;
+            f.ACCEPTERID = SENDERID;
+            _friendshipRepository.CreateFriendship(f);
 
             return new OkObjectResult("Friendship Создан");
         }
@@ -34,39 +49,45 @@ public class FriendshipController : ControllerBase
     [HttpPost("sendreq")]
     public ActionResult SendFriendRequest(int RECEIVERID)
     {
-        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int SENDERID = _authRepository.GetUser(User.Identity.Name).ID;
             
-        if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
+        if (!_friendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !_friendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {
-            FriendshipRepository.MakeFriendship(SENDERID, RECEIVERID, 0);
-            FriendshipRepository.MakeFriendship(RECEIVERID, SENDERID, 0);
+            Friendship f = new Friendship();
+            f.SENDERID = SENDERID;
+            f.ACCEPTERID = RECEIVERID;
+            f.STATE = 0;
+            _friendshipRepository.CreateFriendship(f);
+            f.SENDERID = RECEIVERID;
+            f.ACCEPTERID = SENDERID;
+            _friendshipRepository.CreateFriendship(f);
         }
 
-        if (FriendshipRepository.IsFriendRequest(SENDERID, RECEIVERID))
+        if (_friendshipRepository.IsFriendRequest(SENDERID, RECEIVERID))
         {
-            FriendshipRepository.FrendshipChange(SENDERID, RECEIVERID, 3);
-            FriendshipRepository.FrendshipChange(RECEIVERID, SENDERID, 3);
+            _friendshipRepository.SetFriendshipState(SENDERID, RECEIVERID, 3);
+            _friendshipRepository.SetFriendshipState(RECEIVERID, SENDERID, 3);
                 
             return new OkObjectResult("Запрос в друзья принят");
         }
 
-        if (FriendshipRepository.IsFriend(SENDERID, RECEIVERID))
+        if (_friendshipRepository.IsFriend(SENDERID, RECEIVERID))
         {
             return new BadRequestObjectResult("Вы уже являетесь друзьями");
         }
 
-        if (FriendshipRepository.IsBlocked(RECEIVERID, SENDERID))
+        if (_friendshipRepository.IsBlocked(RECEIVERID, SENDERID))
         {
             return new BadRequestObjectResult("Данный пользователь заблокировал вас");
         }
             
-        if (FriendshipRepository.IsBlocked(SENDERID, RECEIVERID))
+        if (_friendshipRepository.IsBlocked(SENDERID, RECEIVERID))
         {
             return new BadRequestObjectResult("Вы заблокировали данного пользователя");
         }
             
-        FriendshipRepository.FrendshipChange(SENDERID, RECEIVERID, 1);
-        FriendshipRepository.FrendshipChange(RECEIVERID, SENDERID, 2);
+        _friendshipRepository.SetFriendshipState(SENDERID, RECEIVERID, 1);
+        _friendshipRepository.SetFriendshipState(RECEIVERID, SENDERID, 2);
 
         return new OkObjectResult("Запрос в друзья отправлен");
     }
@@ -74,25 +95,31 @@ public class FriendshipController : ControllerBase
     [HttpPost("block")]
     public ActionResult Block(int RECEIVERID)
     {
-        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int SENDERID = _authRepository.GetUser(User.Identity.Name).ID;
             
-        if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
+        if (!_friendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !_friendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {
-            FriendshipRepository.MakeFriendship(SENDERID, RECEIVERID, 0);
-            FriendshipRepository.MakeFriendship(RECEIVERID, SENDERID, 0);
+            Friendship f = new Friendship();
+            f.SENDERID = SENDERID;
+            f.ACCEPTERID = RECEIVERID;
+            f.STATE = 0;
+            _friendshipRepository.CreateFriendship(f);
+            f.SENDERID = RECEIVERID;
+            f.ACCEPTERID = SENDERID;
+            _friendshipRepository.CreateFriendship(f);
         }
             
-        if (FriendshipRepository.IsBlocked(SENDERID, RECEIVERID))
+        if (_friendshipRepository.IsBlocked(SENDERID, RECEIVERID))
         {
             return new BadRequestObjectResult("Вы уже заблокировали данного пользователя");
         }
 
-        if (FriendshipRepository.IsFriend(RECEIVERID, SENDERID))
+        if (_friendshipRepository.IsFriend(RECEIVERID, SENDERID))
         {
-            FriendshipRepository.FrendshipChange(RECEIVERID, SENDERID, 0);
+            _friendshipRepository.SetFriendshipState(RECEIVERID, SENDERID, 0);
         }
             
-        FriendshipRepository.FrendshipChange(SENDERID, RECEIVERID, 4);
+        _friendshipRepository.SetFriendshipState(SENDERID, RECEIVERID, 4);
 
         return new OkObjectResult("Пользователь заблокирован");
     }
@@ -100,20 +127,26 @@ public class FriendshipController : ControllerBase
     [HttpPost("unblock")]
     public ActionResult UnBlock(int RECEIVERID)
     {
-        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
+        int SENDERID = _authRepository.GetUser(User.Identity.Name).ID;
             
-        if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
+        if (!_friendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !_friendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {
-            FriendshipRepository.MakeFriendship(SENDERID, RECEIVERID, 0);
-            FriendshipRepository.MakeFriendship(RECEIVERID, SENDERID, 0);
+            Friendship f = new Friendship();
+            f.SENDERID = SENDERID;
+            f.ACCEPTERID = RECEIVERID;
+            f.STATE = 0;
+            _friendshipRepository.CreateFriendship(f);
+            f.SENDERID = RECEIVERID;
+            f.ACCEPTERID = SENDERID;
+            _friendshipRepository.CreateFriendship(f);
         }
             
-        if (!FriendshipRepository.IsBlocked(SENDERID, RECEIVERID))
+        if (!_friendshipRepository.IsBlocked(SENDERID, RECEIVERID))
         {
             return new BadRequestObjectResult("Пользователь не заблокирован");
         }
             
-        FriendshipRepository.FrendshipChange(SENDERID, RECEIVERID, 0);
+        _friendshipRepository.SetFriendshipState(SENDERID, RECEIVERID, 0);
 
         return new OkObjectResult("Пользователь разблокирован");
     }
@@ -121,7 +154,7 @@ public class FriendshipController : ControllerBase
     [HttpGet("get_byid")]
     public ActionResult<Friendship> GetFriendship(int ID)
     {
-        Friendship fs = FriendshipRepository.GetFriendship(ID);
+        Friendship fs = _friendshipRepository.GetFriendship(ID);
         return new OkObjectResult(fs);
     }
 }

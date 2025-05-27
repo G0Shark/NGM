@@ -1,37 +1,48 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using NGM_Server_rebuild.Domain.Entities;
-using NGM_Server_rebuild.Services;
+using NGM_Server_rebuild;
 using NGMapi.Domain.Entities;
+using NGMapi.Domain.Interfaces;
 using NGMapi.Infrastructure.Repositories;
 using SignalRSwaggerGen.Attributes;
 
-namespace NGM_Server_rebuild.Hubs;
+namespace NGMapi.API.API_v1.Hubs;
 
 [SignalRHub]
+[Authorize]
 public class VoiceHub : Hub
 {
+    private readonly IAuthRepository _authRepository;
+    private readonly IChatsRepository _chatsRepository;
+    private readonly IMembersRepository _membersRepository;
+    private readonly IRolesRepository _rolesRepository;
+    private readonly IServersRepository _serversRepository;
+
+    public VoiceHub(IAuthRepository AUTH_REPOSITORY, IChatsRepository CHATS_REPOSITORY, IMembersRepository MEMBERS_REPOSITORY, 
+        IRolesRepository ROLES_REPOSITORY, IServersRepository SERVERS_REPOSITORY)
+    {
+        _authRepository = AUTH_REPOSITORY;
+        _chatsRepository = CHATS_REPOSITORY;
+        _membersRepository = MEMBERS_REPOSITORY;
+        _rolesRepository = ROLES_REPOSITORY;
+        _serversRepository = SERVERS_REPOSITORY;
+    }
+
     public async Task SendScreen(int ID, byte[] DATA, bool DMCHAT)
     {
         try
         {
-            Chat chat = ChatsRepository.GetChat(ID);
+            Chat chat = _chatsRepository.GetChat(ID);
             if (!DMCHAT && chat.TYPE != "VOICE")
             {
                 await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не голосовой."));
                 return;
             }
             
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string username = AuthRepository.TryLogin(httpContext.Request);
-            User caller = AuthRepository.GetUser(username);
-            if (MembersRepository.IsVoiceMuted(chat.SERVERID, caller.ID))
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
+            if (_membersRepository.IsVoiceMuted(chat.SERVERID, caller.ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Вы замьючены."));
                 return;
@@ -58,14 +69,14 @@ public class VoiceHub : Hub
             }
             else
             {
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -92,23 +103,16 @@ public class VoiceHub : Hub
     {
         try
         {
-            Chat chat = ChatsRepository.GetChat(ID);
+            Chat chat = _chatsRepository.GetChat(ID);
             if (!DMCHAT && chat.TYPE != "VOICE")
             {
                 await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не голосовой."));
                 return;
             }
             
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string username = AuthRepository.TryLogin(httpContext.Request);
-            User caller = AuthRepository.GetUser(username);
-            if (MembersRepository.IsVoiceMuted(chat.SERVERID, caller.ID))
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
+            if (_membersRepository.IsVoiceMuted(chat.SERVERID, caller.ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Вы замьючены."));
                 return;
@@ -135,14 +139,14 @@ public class VoiceHub : Hub
             }
             else
             {
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -169,13 +173,13 @@ public class VoiceHub : Hub
     {
         try
         {
-            if (!ChatsRepository.IsChatExists(ID))
+            if (!_chatsRepository.IsChatExists(ID))
             {
                 await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не существует."));
                 return;
             }
 
-            Chat chat = ChatsRepository.GetChat(ID);
+            Chat chat = _chatsRepository.GetChat(ID);
             
             if (!DMCHAT && chat.TYPE != "VOICE")
             {
@@ -183,15 +187,8 @@ public class VoiceHub : Hub
                 return;
             }
             
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string username = AuthRepository.TryLogin(httpContext.Request);
-            User caller = AuthRepository.GetUser(username);
+            string username = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(username);
             if (DMCHAT)
             {
                 if (caller.ID == ID)
@@ -217,14 +214,14 @@ public class VoiceHub : Hub
             }
             else
             {
-                var roles = RolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
-                if (!RolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
-                    !ServersRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
+                var roles = _rolesRepository.GetRolesOfUser(caller.ID, chat.SERVERID);
+                if (!_rolesRepository.IsUserHavePermission(caller.ID, chat.SERVERID, "ADMIN") && 
+                    !_serversRepository.IsOwner(chat.SERVERID, caller.ID) && chat.ROLEID != "0")
                 {
                     bool containsRole = false;
                     foreach (var roleId in chat.ROLEID.Split(' '))
                     {
-                        if (roles.Contains(RolesRepository.GetRole(int.Parse(roleId))))
+                        if (roles.Contains(_rolesRepository.GetRole(int.Parse(roleId))))
                         {
                             containsRole = true;
                         }
@@ -253,20 +250,13 @@ public class VoiceHub : Hub
     {
         try
         {
-            if (!DMCHAT && ChatsRepository.GetChat(ID).TYPE != "VOICE")
+            if (!DMCHAT && _chatsRepository.GetChat(ID).TYPE != "VOICE")
             {
                 await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не голосовой."));
             }
             
-            var httpContext = Context.GetHttpContext();
-            if (httpContext == null)
-            {
-                await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("HttpContext равен null, вы точно добавили Authorization header?"));
-                return;
-            }
-            
-            string u = AuthRepository.TryLogin(httpContext.Request);
-            User caller = AuthRepository.GetUser(u);
+            string u = Context.User.Identity.Name;
+            User caller = _authRepository.GetUser(u);
             
             if (DMCHAT)
             {

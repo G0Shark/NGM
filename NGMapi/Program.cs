@@ -15,11 +15,12 @@ using MySql.Data.MySqlClient;
 using Mysqlx;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.API.API_v1.MIddlewares;
-using NGM_Server_rebuild.Hubs;
 using NGM_Server_rebuild.Infrastructure.Persistence;
+using NGMapi.API.API_v1.Hubs;
 using NGMapi.Application.Interfaces;
 using NGMapi.Application.Services;
 using NGMapi.Domain.Interfaces;
+using NGMapi.Infrastructure.Repositories;
 using Prometheus;
 using StackExchange.Redis;
 
@@ -85,6 +86,15 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IJwtGenerator, JwtGenerator>();
 builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
+
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IChatsRepository, ChatsRepository>();
+builder.Services.AddScoped<IFriendshipRepository, FriendshipRepository>();
+builder.Services.AddScoped<IMembersRepository, MembersRepository>();
+builder.Services.AddScoped<IMessagingRepository, MessagingRepository>();
+builder.Services.AddScoped<IRolesRepository, RolesRepository>();
+builder.Services.AddScoped<IServersRepository, ServersRepository>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Dev",

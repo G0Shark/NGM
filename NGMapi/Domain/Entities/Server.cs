@@ -5,7 +5,6 @@ namespace NGM_Server_rebuild.Domain.Entities;
 public class Server
 {
     [Required]
-    [MaxLength(16)]
     public int ID { get; set; }
     [Required]
     [MaxLength(30)]
@@ -16,7 +15,6 @@ public class Server
     [Required]
     public bool VISIBLE { get; set; }
     [Required]
-    [MaxLength(16)]
     public int OWNERID { get; set; }
     public DateTime CREATION_DATE { get; set; }
 }

@@ -5,13 +5,10 @@ namespace NGM_Server_rebuild.Domain.Entities;
 public class Member
 {
     [Required]
-    [MaxLength(16)]
     public int ID { get; set; }
     [Required]
-    [MaxLength(16)]
     public int SERVERID { get; set; }
     [Required]
-    [MaxLength(16)]
     public int USERID { get; set; }
     [Required]
     public string ROLEID { get; set; }

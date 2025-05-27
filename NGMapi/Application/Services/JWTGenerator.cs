@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using NGM_Server_rebuild.Domain.Entities;
 using NGMapi.Application.Interfaces;
+using NGMapi.Domain.Entities;
 
 namespace NGMapi.Application.Services;
 
@@ -22,7 +23,7 @@ public class JwtGenerator : IJwtGenerator
         return claimsIdentity;
     }
 
-    public string GenerateJwt(ClaimsIdentity identity)
+    public string GenerateJwt(ClaimsIdentity identity, DateTime expires)
     {
         var now = DateTime.UtcNow;
         var jwt = new JwtSecurityToken(
@@ -30,7 +31,7 @@ public class JwtGenerator : IJwtGenerator
             audience: "NGMClient",
             notBefore: now,
             claims: identity.Claims,
-            expires: now.Add(TimeSpan.FromMinutes(30)), 
+            expires: expires, 
             signingCredentials: new SigningCredentials(
                 new SymmetricSecurityKey(
                     Encoding.ASCII

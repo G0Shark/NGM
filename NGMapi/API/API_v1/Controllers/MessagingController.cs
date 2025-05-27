@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
 using NGM_Server_rebuild.Services;
@@ -9,13 +10,13 @@ namespace NGMapi.API.API_v1.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MessagingController : ControllerBase
 {
-    [HttpGet("get")]
+    [HttpGet]
     public ActionResult<List<Message>> GetMessages(int ID, bool DMCHAT)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userId = AuthRepository.GetUser(username).ID;
+        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
         Chat chat = ChatsRepository.GetChat(ID);
             
         if (!DMCHAT && !ChatsRepository.IsChatExists(ID))

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild.Domain.Entities;
 using NGM_Server_rebuild.Services;
 using NGMapi.Domain.Entities;
@@ -8,13 +9,13 @@ namespace NGMapi.API.API_v1.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ChatsController : ControllerBase
 {
-    [HttpPost("create")]
+    [HttpPost]
     public ActionResult CreateChat(int SERVERID, string NAME, string DESCRIPTION, string TYPE, string ROLEID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userId = AuthRepository.GetUser(username).ID;
+        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
         var roles = RolesRepository.GetRolesOfUser(userId, SERVERID);
             
         if (TYPE == "CHAT")
@@ -56,11 +57,10 @@ public class ChatsController : ControllerBase
         return new OkObjectResult("Чат создан.");
     }
     
-    [HttpDelete("delete")]
+    [HttpDelete]
     public ActionResult DeleteChat(int ID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userId = AuthRepository.GetUser(username).ID;
+        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
         Chat chat = ChatsRepository.GetChat(ID);
         var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
 
@@ -107,8 +107,7 @@ public class ChatsController : ControllerBase
     [HttpPatch("name")]
     public ActionResult ChangeName(int ID, string NAME)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userId = AuthRepository.GetUser(username).ID;
+        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
         Chat chat = ChatsRepository.GetChat(ID);
         string TYPE = chat.TYPE;
         var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
@@ -156,8 +155,7 @@ public class ChatsController : ControllerBase
     [HttpPatch("description")]
     public ActionResult ChangeDescription(int ID, string DESCRIPTION)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userId = AuthRepository.GetUser(username).ID;
+        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
         Chat chat = ChatsRepository.GetChat(ID);
         string TYPE = chat.TYPE;
         var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);
@@ -205,8 +203,7 @@ public class ChatsController : ControllerBase
     [HttpPatch("roleid")]
     public ActionResult ChangeType(int ID, string ROLEID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userId = AuthRepository.GetUser(username).ID;
+        int userId = AuthRepository.GetUser(User.Identity.Name).ID;
         Chat chat = ChatsRepository.GetChat(ID);
         string oldTYPE = chat.TYPE;
         var roles = RolesRepository.GetRolesOfUser(userId, chat.SERVERID);

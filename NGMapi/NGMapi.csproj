@@ -16,6 +16,12 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.12"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.16" />
         <PackageReference Include="MySql.Data" Version="9.2.0" />
+        <PackageReference Include="OpenTelemetry" Version="1.12.0" />
+        <PackageReference Include="OpenTelemetry.Api" Version="1.12.0" />
+        <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.12.0-beta.1" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
+        <PackageReference Include="prometheus-net" Version="8.2.1" />
+        <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
         <PackageReference Include="SignalRSwaggerGen" Version="4.8.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.8.37" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
@@ -24,7 +30,6 @@
     <ItemGroup>
       <Folder Include="Application\Features\" />
       <Folder Include="Domain\Enums\" />
-      <Folder Include="Domain\Interfaces\" />
       <Folder Include="Infrastructure\Migrations\" />
     </ItemGroup>
 

@@ -10,11 +10,10 @@ namespace NGMapi.API.API_v1.Controllers;
 [Route("api/[controller]")]
 public class ServersController : ControllerBase
 {
-    [HttpPost("create")]
+    [HttpPost]
     public ActionResult Create(string NAME, string? DESCRIPTION, string JOINPASSWORD, bool VISIBLE)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (ServersRepository.IsServerExists(NAME))
         {
@@ -29,8 +28,7 @@ public class ServersController : ControllerBase
     [HttpPatch("name")]
     public ActionResult ChangeName(int ID, string NAME)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (!RolesRepository.IsUserHavePermission(userID, ID, "ADMIN") &&
             !ServersRepository.IsOwner(ID, userID))
@@ -46,8 +44,7 @@ public class ServersController : ControllerBase
     [HttpPatch("description")]
     public ActionResult ChangeDescription(int ID, string DESCRIPTION)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         if (!RolesRepository.IsUserHavePermission(userID, ID, "ADMIN") &&
             !ServersRepository.IsOwner(ID, userID))
@@ -63,8 +60,7 @@ public class ServersController : ControllerBase
     [HttpPatch("ownerid")]
     public ActionResult ChangeOwner(int ID, int OWNERID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (!RolesRepository.IsUserHavePermission(userID, ID, "ADMIN") &&
             !ServersRepository.IsOwner(ID, userID))
@@ -80,8 +76,7 @@ public class ServersController : ControllerBase
     [HttpPatch("joinpassword")]
     public ActionResult ChangeJoinPassword(int ID, string JOINPASSWORD)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (!RolesRepository.IsUserHavePermission(userID, ID, "ADMIN") &&
             !ServersRepository.IsOwner(ID, userID))
@@ -97,8 +92,7 @@ public class ServersController : ControllerBase
     [HttpPatch("visible")]
     public ActionResult ChangeJoinPassword(int ID, bool VISIBLE)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (!RolesRepository.IsUserHavePermission(userID, ID, "ADMIN") &&
             !ServersRepository.IsOwner(ID, userID))
@@ -111,11 +105,10 @@ public class ServersController : ControllerBase
         return new OkObjectResult("Видимость сервера изменена");
     }
     
-    [HttpDelete("delete")]
+    [HttpDelete]
     public ActionResult Delete(int ID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int userID = AuthRepository.GetUser(username).ID;
+        int userID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (!ServersRepository.IsOwner(ID, userID))
         {

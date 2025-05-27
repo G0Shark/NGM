@@ -1,20 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
 using NGM_Server_rebuild.Services;
+using NGMapi.Domain.Entities;
 using NGMapi.Infrastructure.Repositories;
 
 namespace NGMapi.API.API_v1.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MembersController : ControllerBase
 {
     [HttpPost("join")]
     public ActionResult JoinServer(int SERVERID, string JOINPASSWORD)
     {
-        string username = AuthRepository.TryLogin(Request);
-        User user = AuthRepository.GetUser(username);
+        User user = AuthRepository.GetUser(User.Identity.Name);
 
         if (!ServersRepository.IsServerExists(SERVERID))
         {
@@ -43,8 +45,7 @@ public class MembersController : ControllerBase
     [HttpPost("try_join")]
     public ActionResult TryJoinServer(int SERVERID, string JOINPASSWORD)
     {
-        string username = AuthRepository.TryLogin(Request);
-        User user = AuthRepository.GetUser(username);
+        User user = AuthRepository.GetUser(User.Identity.Name);
 
         if (!ServersRepository.IsServerExists(SERVERID))
         {
@@ -53,10 +54,12 @@ public class MembersController : ControllerBase
 
         if (ServersRepository.IsVisible(SERVERID))
         {
+            MembersRepository.Create(SERVERID, user.ID, user.DISPLAYNAME);
             return new OkObjectResult("Вы присоеденились.");
         }
         if (ServersRepository.TryJoinWithPassword(SERVERID, JOINPASSWORD))
         {
+            MembersRepository.Create(SERVERID, user.ID, user.DISPLAYNAME);
             return new OkObjectResult("Вы присоеденились.");
         }
         return new UnauthorizedObjectResult("Пароль неверный");
@@ -65,8 +68,7 @@ public class MembersController : ControllerBase
     [HttpPost("leave")]
     public ActionResult LeaveServer(int SERVERID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        User user = AuthRepository.GetUser(username);
+        User user = AuthRepository.GetUser(User.Identity.Name);
 
         if (!MembersRepository.IsMember(SERVERID, user.ID))
         {
@@ -74,15 +76,13 @@ public class MembersController : ControllerBase
         }
             
         MembersRepository.Delete(SERVERID, user.ID);
-            
         return new OkObjectResult("Вы покинули сервер.");
     }
     
     [HttpPut("textmute")]
     public ActionResult TextMute(int USERID, int SERVERID, bool VALUE)
     {
-        string username = AuthRepository.TryLogin(Request);
-        User user = AuthRepository.GetUser(username);
+        User user = AuthRepository.GetUser(User.Identity.Name);
 
         if (!MembersRepository.IsMember(SERVERID, USERID))
         {
@@ -103,8 +103,7 @@ public class MembersController : ControllerBase
     [HttpPut("voicemute")]
     public ActionResult VoiceMute(int USERID, int SERVERID, bool VALUE)
     {
-        string username = AuthRepository.TryLogin(Request);
-        User user = AuthRepository.GetUser(username);
+        User user = AuthRepository.GetUser(User.Identity.Name);
 
         if (!MembersRepository.IsMember(SERVERID, USERID))
         {

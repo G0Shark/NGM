@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using NGM_Server_rebuild;
-using NGM_Server_rebuild.Domain.Entities;
-using NGM_Server_rebuild.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using NGMapi.Application.Interfaces;
+using NGMapi.Domain.Entities;
 using NGMapi.Infrastructure.Repositories;
 
 namespace NGMapi.API.API_v1.Controllers;
@@ -10,88 +10,42 @@ namespace NGMapi.API.API_v1.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    [HttpPost("login")]
-    public ActionResult Login()
+    private readonly IPasswordHasher hasher;
+    private readonly IJwtGenerator jwtGenerator;
+
+    public AuthController(IPasswordHasher hasher, IJwtGenerator jwtGenerator)
     {
-        AuthRepository.TryLogin(Request);
-        return Ok("Вход успешен");
-    }
-    
-    [HttpGet("login")]
-    public ActionResult<User> LoginWithUserReturn()
-    {
-        return new OkObjectResult(AuthRepository.GetUser(AuthRepository.TryLogin(Request)));
-    }
-    
-    [HttpPost("register")]
-    public ActionResult Register(string USERNAME, string PASSWORD, string EMAIL, string? DISPLAYNAME, string? DESCRIPTION)
-    {
-        AuthRepository.Register(USERNAME, PASSWORD, EMAIL, DISPLAYNAME, DESCRIPTION);
-        return Ok("Пользователь создан");
-    }
-    
-    [HttpDelete("delete")]
-    public ActionResult DeleteAccount()
-    {
-        string username = AuthRepository.TryLogin(Request);
-        User u = AuthRepository.GetUser(username);
-        AuthRepository.DeleteUser(username);
-        MembersRepository.DeleteUser(u.ID);
-        FriendshipRepository.DeleteUser(u.ID);
-        return Ok("Пользователь удалён");
-    }
-    
-    [HttpPatch("username")]
-    public ActionResult UpdateUsername(string USERNAME)
-    {
-        string username = AuthRepository.TryLogin(Request);
-        AuthRepository.UpdateUsername(username, USERNAME);
-        return Ok("username пользователя изменён");
-    }
-    
-    [HttpPatch("password")]
-    public ActionResult UpdatePassword(string PASSWORD)
-    {
-        string username = AuthRepository.TryLogin(Request);
-        AuthRepository.UpdatePassword(username, PASSWORD);
-        return Ok("password пользователя изменён");
-    }
-    
-    [HttpPatch("email")]
-    public ActionResult UpdateEmail(string EMAIL)
-    {
-        string username = AuthRepository.TryLogin(Request);
-        AuthRepository.UpdateEmail(username, EMAIL);
-        return Ok("email пользователя изменён");
-    }
-    
-    [HttpPatch("displayname")]
-    public ActionResult UpdateDisplayName(string DISPLAYNAME)
-    {
-        string username = AuthRepository.TryLogin(Request);
-        AuthRepository.UpdateDisplayName(username, DISPLAYNAME);
-        return Ok("displayname пользователя изменён");
-    }
-    
-    [HttpPatch("description")]
-    public ActionResult UpdateDescription(string DESCRIPTION)
-    {
-        string username = AuthRepository.TryLogin(Request);
-        AuthRepository.UpdateDescription(username, DESCRIPTION);
-        return Ok("description пользователя изменён");
+        this.hasher = hasher;
+        this.jwtGenerator = jwtGenerator;
     }
 
-    [HttpGet("get_byusername")]
-    public ActionResult<User> GetUser(string USERNAME)
+    [HttpGet]
+    public async Task<ActionResult<string>> GetJwtToken(string USERNAME, string PASSWORD, bool FOR_LONG)
     {
-        User u = AuthRepository.GetUser(USERNAME);
-        return new OkObjectResult(u);
+        User u = AuthRepository.GetUserWithPassword(USERNAME);
+        if (!await hasher.VerifyPasswordAsync(PASSWORD, u.PASSWORD))
+            return Unauthorized();
+
+        DateTime time = DateTime.Now;
+        time.AddHours(8);
+        if (FOR_LONG)
+            time.AddDays(29);
+
+        u.PASSWORD = "";
+        
+        var res = new
+        {
+            token = jwtGenerator.GenerateJwt(jwtGenerator.GenerateIdentify(u), time),
+            user = u
+        };
+        
+        return Ok(res);
     }
     
-    [HttpGet("get_byid")]
-    public ActionResult<User> GetUser(int ID)
+    [HttpPost]
+    public async Task<ActionResult> Register(string USERNAME, string PASSWORD, string EMAIL, string? DISPLAYNAME, string? DESCRIPTION)
     {
-        User u = AuthRepository.GetUser(ID);
-        return new OkObjectResult(u);
+        AuthRepository.Register(USERNAME, await hasher.HashPasswordAsync(PASSWORD), EMAIL, DISPLAYNAME, DESCRIPTION);
+        return Ok("Пользователь создан");
     }
 }

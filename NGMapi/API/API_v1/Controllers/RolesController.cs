@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
 using NGM_Server_rebuild.Services;
@@ -8,13 +9,13 @@ namespace NGMapi.API.API_v1.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class RolesController : ControllerBase
 {
-    [HttpPost("create")]
+    [HttpPost]
     public ActionResult CreateRole(int SERVERID, int LEVEL, string PERMISSIONS, string NAME)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int ID = AuthRepository.GetUser(username).ID;
+        int ID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (!RolesRepository.IsUserHavePermission(ID, SERVERID, "CREATE_ROLE") &&
             !ServersRepository.IsOwner(SERVERID, ID))
@@ -37,11 +38,10 @@ public class RolesController : ControllerBase
         return new OkObjectResult("Роль создана");
     }
     
-    [HttpDelete("delete")]
+    [HttpDelete]
     public ActionResult DeleteRole(int ID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int USERID = AuthRepository.GetUser(username).ID;
+        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
         int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
 
             
@@ -65,8 +65,7 @@ public class RolesController : ControllerBase
     [HttpPatch("name")]
     public ActionResult ChangeName(int ID, string NAME)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int USERID = AuthRepository.GetUser(username).ID;
+        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
 
@@ -88,8 +87,7 @@ public class RolesController : ControllerBase
     [HttpPatch("level")]
     public ActionResult ChangeLevel(int ID, int LEVEL)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int USERID = AuthRepository.GetUser(username).ID;
+        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
 
@@ -111,8 +109,7 @@ public class RolesController : ControllerBase
     [HttpPatch("permissions")]
     public ActionResult ChangePermissions(int ID, string PERMISSIONS)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int USERID = AuthRepository.GetUser(username).ID;
+        int USERID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         int SERVERID = RolesRepository.GetServerIDByRoleID(ID);
 
@@ -139,7 +136,7 @@ public class RolesController : ControllerBase
         return new OkObjectResult("Права роли изменены");
     }
     
-    [HttpGet("api/roles/get_byid")]
+    [HttpGet("get_byid")]
     public ActionResult<Role> GetRole(int ID)
     {
         Role role = RolesRepository.GetRole(ID);

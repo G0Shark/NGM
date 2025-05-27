@@ -22,7 +22,7 @@ public class Argon2PasswordHasher : IPasswordHasher
         using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password + pepper))
         {
             Salt = salt,
-            Iterations = 1000,
+            Iterations = 10,
             MemorySize = 65536,
             DegreeOfParallelism = 4
         };
@@ -39,7 +39,7 @@ public class Argon2PasswordHasher : IPasswordHasher
         using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password + pepper))
         {
             Salt = salt,
-            Iterations = 1000,
+            Iterations = 10,
             MemorySize = 65536,
             DegreeOfParallelism = 4
         };

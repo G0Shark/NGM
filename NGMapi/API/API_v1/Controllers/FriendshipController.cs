@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild.Domain.Entities;
 using NGM_Server_rebuild.Services;
 using NGMapi.Infrastructure.Repositories;
@@ -7,13 +8,13 @@ namespace NGMapi.API.API_v1.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class FriendshipController : ControllerBase
 {
     [HttpPost("make")]
     public ActionResult MakeFriendShip(int RECEIVERID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int SENDERID = AuthRepository.GetUser(username).ID;
+        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
 
         if (SENDERID == RECEIVERID)
         {
@@ -33,8 +34,7 @@ public class FriendshipController : ControllerBase
     [HttpPost("sendreq")]
     public ActionResult SendFriendRequest(int RECEIVERID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int SENDERID = AuthRepository.GetUser(username).ID;
+        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {
@@ -74,8 +74,7 @@ public class FriendshipController : ControllerBase
     [HttpPost("block")]
     public ActionResult Block(int RECEIVERID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int SENDERID = AuthRepository.GetUser(username).ID;
+        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {
@@ -101,8 +100,7 @@ public class FriendshipController : ControllerBase
     [HttpPost("unblock")]
     public ActionResult UnBlock(int RECEIVERID)
     {
-        string username = AuthRepository.TryLogin(Request);
-        int SENDERID = AuthRepository.GetUser(username).ID;
+        int SENDERID = AuthRepository.GetUser(User.Identity.Name).ID;
             
         if (!FriendshipRepository.IsFriendshipExists(SENDERID, RECEIVERID) || !FriendshipRepository.IsFriendshipExists(RECEIVERID, SENDERID))
         {

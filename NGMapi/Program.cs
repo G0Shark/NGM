@@ -5,8 +5,10 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.RateLimiting;
+using Backend.Core.Services;
 using LiveStreamingServerNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MySql.Data.MySqlClient;
@@ -14,6 +16,12 @@ using Mysqlx;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.API.API_v1.MIddlewares;
 using NGM_Server_rebuild.Hubs;
+using NGM_Server_rebuild.Infrastructure.Persistence;
+using NGMapi.Application.Interfaces;
+using NGMapi.Application.Services;
+using NGMapi.Domain.Interfaces;
+using Prometheus;
+using StackExchange.Redis;
 
 //Проверка на коннект, чтобы я не подключился к несуществующей дб
 try
@@ -38,20 +46,29 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "NGM API v1", Version = "v1" });
     // some other configs
     options.AddSignalRSwaggerGen();
-    options.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Basic auth added to authorization header",
+        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n
+                      Enter 'Bearer' [space] and then your token in the text input below.
+                      \r\n\r\nExample: 'Bearer 12345abcdef'",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Scheme = "basic",
-        Type = SecuritySchemeType.Http
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
     });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement()
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = ParameterLocation.Header,
             },
             new List<string>()
         }
@@ -60,9 +77,17 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddSignalR(hubOptions =>{    
     hubOptions.MaximumReceiveMessageSize = null;
 });
+builder.Services.AddDbContext<NGMDbContext>(options =>
+        options.UseMySql(gb.db,
+            new MySqlServerVersion(new Version(5, 7, 41))));
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp => 
+    ConnectionMultiplexer.Connect(gb.rdb));
+builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
+builder.Services.AddScoped<IJwtGenerator, JwtGenerator>();
+builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("origins",
+    options.AddPolicy("Dev",
         policy =>
         {
             policy
@@ -114,7 +139,7 @@ if (app.Environment.IsDevelopment())
 }
 app.UseDeveloperExceptionPage();
 app.UseHttpsRedirection();
-app.UseCors("origins");
+app.UseCors("Dev");
 //Присоединение всех моих контроллеров и файлов
 app.MapControllers();
 app.UseDefaultFiles();
@@ -122,6 +147,8 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseRateLimiter();
+app.UseMetricServer();
+app.UseHttpMetrics();
 
 app.MapGet("/api/ping", () =>
 {

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
+using NGMapi.Domain.Entities;
 
 namespace NGMapi.Infrastructure.Repositories;
 
@@ -86,7 +87,6 @@ public static class AuthRepository
         {
             DESCRIPTION = "Нет описания, как минимум пока что";
         }
-
         if (!IsValidEmail(EMAIL))
         {
             throw new NGMServiceExeption(new BadRequestObjectResult("Неверная почта"));
@@ -143,7 +143,38 @@ public static class AuthRepository
                             EMAIL = reader["EMAIL"].ToString()!,
                             USERNAME = reader["USERNAME"].ToString()!,
                             DISPLAYNAME = reader["DISPLAYNAME"].ToString()!,
-                            DESCRIPTION = reader["DESCRIPTION"].ToString()!
+                            DESCRIPTION = reader["DESCRIPTION"].ToString()!,
+                        };
+                    }
+                }
+            }
+        }
+
+        throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
+    }
+    public static User GetUserWithPassword(string USERNAME)
+    {
+        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        {
+            connection.Open();
+            string checkQuery = "SELECT * FROM users WHERE USERNAME = @USERNAME";
+
+            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
+            {
+                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
+
+                using (MySqlDataReader reader = checkCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new User
+                        {
+                            ID = int.Parse(reader["ID"].ToString()!),
+                            EMAIL = reader["EMAIL"].ToString()!,
+                            USERNAME = reader["USERNAME"].ToString()!,
+                            DISPLAYNAME = reader["DISPLAYNAME"].ToString()!,
+                            DESCRIPTION = reader["DESCRIPTION"].ToString()!,
+                            PASSWORD =  reader["PASSWORD"].ToString()!,
                         };
                     }
                 }

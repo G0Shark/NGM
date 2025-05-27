@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<string>> GetJwtToken(string USERNAME, string PASSWORD, bool FOR_LONG)
     {
         User u = _authRepository.GetUserWithPassword(USERNAME);
-        if (!await _hasher.VerifyPasswordAsync(PASSWORD, u.PASSWORD))
+        if (!_hasher.VerifyPassword(PASSWORD, u.PASSWORD))
             return Unauthorized();
 
         DateTime time = DateTime.Now;
@@ -48,6 +48,7 @@ public class AuthController : ControllerBase
     [HttpPost]
     public async Task<ActionResult> Register(User user)
     {
+        user.PASSWORD = _hasher.HashPassword(user.PASSWORD);
         _authRepository.Register(user);
         return Ok("Пользователь создан");
     }

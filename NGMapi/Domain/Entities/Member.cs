@@ -14,8 +14,7 @@ public class Member
     [MaxLength(16)]
     public int USERID { get; set; }
     [Required]
-    [MaxLength(16)]
-    public int ROLEID { get; set; }
+    public string ROLEID { get; set; }
     [MaxLength(100)]
     public string DISPLAYNAME { get; set; }
     [Required]

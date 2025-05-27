@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using K4os.Compression.LZ4.Internal;
+using Microsoft.AspNetCore.Mvc;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
 using NGMapi.Domain.Interfaces;
@@ -35,7 +36,15 @@ public class ServersController : ControllerBase
         }
             
         _serversRepository.CreateServer(server);
-        _membersRepository.CreateMember(_serversRepository.GetServer(server.NAME).ID, userID, "Основатель");
+
+        Member m = new Member()
+        {
+            SERVERID = _serversRepository.GetServer(server.NAME).ID,
+            USERID = userID,
+            DISPLAYNAME = "Основатель"
+        };
+        
+        _membersRepository.CreateMember(m);
         return new OkObjectResult("Сервер создан");
     }
     

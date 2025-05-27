@@ -2,11 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using NGM_Server_rebuild.Domain.Entities;
 using NGMapi.Domain.Entities;
 
-namespace NGM_Server_rebuild.Infrastructure.Persistence;
+namespace NGMapi.Infrastructure.Persistence;
 
 public class NGMDbContext : DbContext
 {
-    public NGMDbContext(DbContextOptions<NGMDbContext> options)
+    public NGMDbContext(DbContextOptions<NGMDbContext> options) : base(options)
     {
     }
     

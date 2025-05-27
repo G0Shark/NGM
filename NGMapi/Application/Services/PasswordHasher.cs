@@ -14,7 +14,7 @@ public class Argon2PasswordHasher : IPasswordHasher
         _config = config;
     }
 
-    public async Task<string> HashPasswordAsync(string password)
+    public string HashPassword(string password)
     {
         var pepper = "super_secrets";
         var salt = GenerateSalt();
@@ -27,11 +27,11 @@ public class Argon2PasswordHasher : IPasswordHasher
             DegreeOfParallelism = 4
         };
 
-        var hash = await argon2.GetBytesAsync(128);
+        var hash = argon2.GetBytes(128);
         return FormatHash(hash, salt);
     }
 
-    public async Task<bool> VerifyPasswordAsync(string password, string hash)
+    public bool VerifyPassword(string password, string hash)
     {
         var (storedHash, salt) = ParseHash(hash);
         var pepper = "super_secrets";
@@ -44,7 +44,7 @@ public class Argon2PasswordHasher : IPasswordHasher
             DegreeOfParallelism = 4
         };
 
-        var newHash = await argon2.GetBytesAsync(128);
+        var newHash = argon2.GetBytes(128);
         return CryptographicOperations.FixedTimeEquals(storedHash, newHash);
     }
 

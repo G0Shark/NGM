@@ -37,15 +37,22 @@ public class MembersController : ControllerBase
             return new NotFoundObjectResult("Сервера не существует");
         }
 
+        Member m = new Member()
+        {
+            SERVERID = SERVERID,
+            USERID = user.ID,
+            DISPLAYNAME = user.DISPLAYNAME
+        };
+        
         if (_serversRepository.IsVisible(SERVERID))
         {
-            _membersRepository.CreateMember(SERVERID, user.ID, user.DISPLAYNAME);
+            _membersRepository.CreateMember(m);
         }
         else
         {
             if (_serversRepository.TryJoinWithPassword(SERVERID, JOINPASSWORD))
             {
-                _membersRepository.CreateMember(SERVERID, user.ID, user.DISPLAYNAME);
+                _membersRepository.CreateMember(m);
             }
             else
             {
@@ -66,14 +73,21 @@ public class MembersController : ControllerBase
             return new NotFoundObjectResult("Сервера не существует");
         }
 
+        Member m = new Member()
+        {
+            SERVERID = SERVERID,
+            USERID = user.ID,
+            DISPLAYNAME = user.DISPLAYNAME
+        };
+        
         if (_serversRepository.IsVisible(SERVERID))
         {
-            _membersRepository.CreateMember(SERVERID, user.ID, user.DISPLAYNAME);
+            _membersRepository.CreateMember(m);
             return new OkObjectResult("Вы присоеденились.");
         }
         if (_serversRepository.TryJoinWithPassword(SERVERID, JOINPASSWORD))
         {
-            _membersRepository.CreateMember(SERVERID, user.ID, user.DISPLAYNAME);
+            _membersRepository.CreateMember(m);
             return new OkObjectResult("Вы присоеденились.");
         }
         return new UnauthorizedObjectResult("Пароль неверный");

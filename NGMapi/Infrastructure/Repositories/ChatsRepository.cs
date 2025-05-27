@@ -3,251 +3,93 @@ using MySql.Data.MySqlClient;
 using NGM_Server_rebuild;
 using NGMapi.Domain.Entities;
 using NGMapi.Domain.Interfaces;
+using NGMapi.Infrastructure.Persistence;
+using NGMapi.Infrastructure.Services;
 
 namespace NGMapi.Infrastructure.Repositories;
 
 public class ChatsRepository : IChatsRepository
 {
+    private readonly IRedisCacheService _redisCacheService;
+    private readonly NGMDbContext _ngmDbContext;
+
+    public ChatsRepository(IRedisCacheService REDIS_CACHE_SERVICE, NGMDbContext NGM_DB_CONTEXT)
+    {
+        _redisCacheService = REDIS_CACHE_SERVICE;
+        _ngmDbContext = NGM_DB_CONTEXT;
+    }
+
     public bool IsChatExists(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM chats WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-                
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"chat_{ID}"))
+            return true;
+        
+        if (_ngmDbContext.chats.Any(x => x.ID == ID))
+            return true;
+        
+        return false;
     }
     
     public void CreateChat(Chat chat)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "INSERT INTO chats (SERVERID, NAME, DESCRIPTION, TYPE, ROLEID) VALUES (@SERVERID, @NAME, @DESCRIPTION, @TYPE, @ROLEID)";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@SERVERID", chat.SERVERID);
-                insertCommand.Parameters.AddWithValue("@NAME", chat.NAME);
-                insertCommand.Parameters.AddWithValue("@DESCRIPTION", chat.DESCRIPTION);
-                insertCommand.Parameters.AddWithValue("@TYPE", chat.TYPE);
-                insertCommand.Parameters.AddWithValue("@ROLEID", chat.ROLEID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                    throw new NGMServiceExeption(new OkObjectResult("Чат создан"));
-                
-                throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-            }
-        }
+        _ngmDbContext.chats.Add(chat);
+        _ngmDbContext.SaveChanges();
     }
     
     public void DeleteChat(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "DELETE FROM chats WHERE ID = @ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Чат удалён"));
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        _ngmDbContext.chats.Remove(_ngmDbContext.chats.First(x => x.ID == ID));
+        _ngmDbContext.SaveChanges();
+        
+        if (_redisCacheService.Exists($"chat_{ID}"))
+            _redisCacheService.Remove($"chat_{ID}");
     }
     
     public void UpdateName(int ID, string NAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE chats SET NAME = @NAME WHERE ID = @ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-                insertCommand.Parameters.AddWithValue("@NAME", NAME);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("NAME Обнеовленно"));
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Chat chat = _ngmDbContext.chats.First(x => x.ID == ID);
+        chat.NAME = NAME;
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Set($"chat_{ID}", chat);
     }
     
     public void UpdateDescription(int ID, string DESCRIPTION)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE chats SET DESCRIPTION = @DESCRIPTION WHERE ID = @ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-                insertCommand.Parameters.AddWithValue("@DESCRIPTION", DESCRIPTION);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("DESCRIPTION Обновленно"));
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Chat chat = _ngmDbContext.chats.First(x => x.ID == ID);
+        chat.DESCRIPTION = DESCRIPTION;
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Set($"chat_{ID}", chat);
     }
     
     public void UpdateRoles(int ID, string ROLEID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE chats SET ROLEID = @ROLEID WHERE ID = @ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-                insertCommand.Parameters.AddWithValue("@ROLEID", ROLEID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("ROLEID Обновленно"));
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Chat chat = _ngmDbContext.chats.First(x => x.ID == ID);
+        chat.ROLEID = ROLEID;
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Set($"chat_{ID}", chat);
     }
     
     public Chat[] GetChats(int SERVERID)
     {
-        List<Chat> chats = new List<Chat>();
-        
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM chats WHERE SERVERID = @SERVERID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        chats.Add(new Chat
-                        {
-                            ID = reader.GetInt32("ID"),
-                            SERVERID = reader.GetInt32("SERVERID"),
-                            NAME = reader.GetString("NAME"),
-                            DESCRIPTION = reader.GetString("DESCRIPTION"),
-                            TYPE = reader.GetString("TYPE"),
-                            ROLEID = reader.GetString("ROLEID")
-                        });
-                    }
-                }
-            }
-        }
-        
-        return chats.ToArray();
+        return _ngmDbContext.chats.Where(x => x.SERVERID == SERVERID).ToArray();
     }
     
     public string GetRolesForChat(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM chats WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return reader.GetString("ROLEID");
-                    }
-                    else
-                    {
-                        throw new NGMServiceExeption(new NotFoundObjectResult("Чата не существует"));
-                    }
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"chat_{ID}"))
+            return _redisCacheService.Get<Chat>($"chat_{ID}").ROLEID;
+        
+        return _ngmDbContext.chats.First(x => x.ID == ID).ROLEID;
     }
     
     public Chat GetChat(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM chats WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new Chat
-                        {
-                            ID = reader.GetInt32("ID"),
-                            SERVERID = reader.GetInt32("SERVERID"),
-                            NAME = reader.GetString("NAME"),
-                            DESCRIPTION = reader.GetString("DESCRIPTION"),
-                            TYPE = reader.GetString("TYPE"),
-                            ROLEID = reader.GetString("ROLEID")
-                        };
-                    }
-                    else
-                    {
-                        throw new NGMServiceExeption(new NotFoundObjectResult("Чата не существует"));
-                    }
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"chat_{ID}"))
+            return _redisCacheService.Get<Chat>($"chat_{ID}");
+        
+        return _ngmDbContext.chats.First(x => x.ID == ID);
     }
 }

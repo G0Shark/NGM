@@ -4,7 +4,7 @@ namespace NGMapi.Domain.Interfaces;
 
 public interface IMembersRepository
 {
-    public void CreateMember(int SERVERID, int USERID, string DISPLAYNAME);
+    public void CreateMember(Member member);
     public void SetTextMute(int userId, int serverID, bool value);
     public void SetVoiceMute(int userId, int serverID, bool value);
     public bool IsMember(int serverid, int userid);

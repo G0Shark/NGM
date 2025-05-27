@@ -3,32 +3,25 @@ using MySql.Data.MySqlClient;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
 using NGMapi.Domain.Interfaces;
+using NGMapi.Infrastructure.Persistence;
+using NGMapi.Infrastructure.Services;
 
 namespace NGMapi.Infrastructure.Repositories;
 
 public class RolesRepository : IRolesRepository
 {
+    private readonly IRedisCacheService _redisCacheService;
+    private readonly NGMDbContext _ngmDbContext;
+
+    public RolesRepository(IRedisCacheService REDIS_CACHE_SERVICE, NGMDbContext NGM_DB_CONTEXT)
+    {
+        _redisCacheService = REDIS_CACHE_SERVICE;
+        _ngmDbContext = NGM_DB_CONTEXT;
+    }
+
     public int GetLevelOfRole(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT LEVEL FROM roles WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return reader.GetInt32(0);
-                    }
-
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        return _ngmDbContext.roles.First(x => x.ID == ID).LEVEL;
     }
     public int UserMaxLevel(int USERID, int SERVERID)
     {
@@ -62,300 +55,90 @@ public class RolesRepository : IRolesRepository
     }
     public Role[] GetRolesOfUser(int USERID, int SERVERID)
     {
+        string[] rIds = _ngmDbContext.members.First(x => x.USERID == USERID && x.SERVERID == SERVERID).ROLEID.Split(' ');
+        
         List<Role> roles = new List<Role>();
-        string roleIdsString = "";
-            using (var connection = new MySqlConnection(gb.db))
-            {
-                connection.Open();
-
-                var getRoleIdsCmd = new MySqlCommand(
-                    "SELECT ROLEID FROM members WHERE USERID = @USERID AND SERVERID = @SERVERID",
-                    connection);
-                getRoleIdsCmd.Parameters.AddWithValue("@USERID", USERID);
-                getRoleIdsCmd.Parameters.AddWithValue("@SERVERID", SERVERID);
-
-                var result = getRoleIdsCmd.ExecuteScalar();
-                if (result == null || result == DBNull.Value)
-                    throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не участник сервера"));
-
-                roleIdsString = result.ToString();
-            }
-
-            if (string.IsNullOrWhiteSpace(roleIdsString))
-                return roles.ToArray();
-            
-            var roleIds = new List<int>();
-            foreach (var part in roleIdsString.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
-            {
-                if (int.TryParse(part, out var id))
-                    roleIds.Add(id);
-            }
-
-            if (roleIds.Count == 0)
-                return roles.ToArray();
-            
-            using (var connection = new MySqlConnection(gb.db))
-            {
-                connection.Open();
-                var parameters = new List<string>();
-                var cmd = new MySqlCommand();
-                cmd.Connection = connection;
-
-                for (int i = 0; i < roleIds.Count; i++)
-                {
-                    var paramName = "@id" + i;
-                    parameters.Add(paramName);
-                    cmd.Parameters.AddWithValue(paramName, roleIds[i]);
-                }
-
-                var sql = $"SELECT * FROM roles WHERE ID IN ({string.Join(", ", parameters)})";
-                cmd.CommandText = sql;
-
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    roles.Add(new Role
-                    {
-                        ID = reader.GetInt32("ID"),
-                        SERVERID = reader.GetInt32("SERVERID"),
-                        LEVEL = reader.GetInt32("LEVEL"),
-                        PERMISSIONS = reader.GetString("PERMISSIONS"),
-                        NAME = reader.GetString("NAME"),
-                    });
-                }
-            }
-
-            return roles.ToArray();
+        foreach (var rId in rIds)
+        {
+            roles.Add(_ngmDbContext.roles.First(x => x.ID == int.Parse(rId)));
+        }
+        
+        return roles.ToArray();
     }
     
     public Role GetRole(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM roles WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new Role
-                        {
-                            ID = reader.GetInt32("ID"),
-                            SERVERID = reader.GetInt32("SERVERID"),
-                            LEVEL = reader.GetInt32("LEVEL"),
-                            PERMISSIONS = reader.GetString("PERMISSIONS"),
-                            NAME = reader.GetString("NAME"),
-                        };
-                    }
-
-                    throw new NGMServiceExeption(new ConflictObjectResult("Роли не найдено."));
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"role_{ID}"))
+            return _redisCacheService.Get<Role>($"role_{ID}");
+        
+        if (_ngmDbContext.roles.Any(x => x.ID == ID))
+            return _ngmDbContext.roles.First(x => x.ID == ID);
+        
+        throw new NGMServiceExeption(new NotFoundObjectResult("Роли не найдено"));
     }
     
     public bool IsLevelExists(int SERVERID, int LEVEL)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM roles WHERE SERVERID = @SERVERID AND LEVEL = @LEVEL";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
-                checkCommand.Parameters.AddWithValue("@LEVEL", LEVEL);
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        if (_ngmDbContext.roles.Any(x => x.LEVEL == LEVEL && x.SERVERID == SERVERID))
+            return true;
+        
+        return false;
     }
     
     public int GetServerIDByRoleID(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT SERVERID FROM roles WHERE ID=@ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return reader.GetInt32("SERVERID");
-                    }
-                    else
-                    {
-                        throw new NGMServiceExeption(new BadRequestObjectResult("Данного ROLEID не найдено"));
-                    }
-                }
-            }
-        }
+        return _ngmDbContext.roles.First(x => x.ID == ID).SERVERID;
     }
     
     public void CreateRole(Role role)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "INSERT INTO roles (SERVERID, LEVEL, PERMISSIONS, NAME) VALUES (@SERVERID, @LEVEL, @PERMISSIONS, @NAME)";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@SERVERID", role.SERVERID);
-                insertCommand.Parameters.AddWithValue("@LEVEL", role.LEVEL);
-                insertCommand.Parameters.AddWithValue("@PERMISSIONS", role.PERMISSIONS);
-                insertCommand.Parameters.AddWithValue("@NAME", role.NAME);   
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        _ngmDbContext.Add(role);
+        _ngmDbContext.SaveChanges();
     }
     
     public void DeleteRole(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "DELETE FROM roles WHERE ID=@ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Role r = _ngmDbContext.roles.First(x => x.ID == ID);
+        _ngmDbContext.roles.Remove(r);
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Remove($"role_{ID}");
     }
 
     public void DeleteAllRolesOfServer(int SERVERID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        Role[] rs = _ngmDbContext.roles.Where(x => x.SERVERID == SERVERID).ToArray();
+
+        foreach (var r in rs)
         {
-            connection.Open();
-            string insertQuery = "DELETE FROM roles WHERE SERVERID=@SERVERID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@SERVERID", SERVERID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
+            _ngmDbContext.roles.Remove(r);
+            _redisCacheService.Remove($"role_{r.ID}");
         }
+        
+        _ngmDbContext.SaveChanges();
     }
     
     public void ChangeName(int ID, string NAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE roles SET NAME=@NAME WHERE ID=@ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-                insertCommand.Parameters.AddWithValue("@NAME", NAME);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Role r = _ngmDbContext.roles.First(x => x.ID == ID);
+        r.NAME = NAME;
+        _ngmDbContext.SaveChanges();
+        _redisCacheService.Set($"role_{ID}", r);
     }
     
     public void ChangeLevel(int ID, int LEVEL)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE roles SET LEVEL=@LEVEL WHERE ID=@ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-                insertCommand.Parameters.AddWithValue("@LEVEL", LEVEL);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Role r = _ngmDbContext.roles.First(x => x.ID == ID);
+        r.LEVEL = LEVEL;
+        _ngmDbContext.SaveChanges();
+        _redisCacheService.Set($"role_{ID}", r);
     }
     
     public void ChangePermissions(int ID, string PERMISSIONS)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE roles SET PERMISSIONS=@PERMISSIONS WHERE ID=@ID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@ID", ID);
-                insertCommand.Parameters.AddWithValue("@PERMISSIONS", PERMISSIONS);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Role r = _ngmDbContext.roles.First(x => x.ID == ID);
+        r.PERMISSIONS = PERMISSIONS;
+        _ngmDbContext.SaveChanges();
+        _redisCacheService.Set($"role_{ID}", r);
     }
 }

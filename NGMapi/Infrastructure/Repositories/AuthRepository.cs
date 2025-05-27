@@ -6,31 +6,35 @@ using MySql.Data.MySqlClient;
 using MySqlX.XDevAPI.Common;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
+using NGMapi.Application.Interfaces;
 using NGMapi.Domain.Entities;
 using NGMapi.Domain.Interfaces;
+using NGMapi.Infrastructure.Persistence;
+using NGMapi.Infrastructure.Services;
 
 namespace NGMapi.Infrastructure.Repositories;
 
 public class AuthRepository : IAuthRepository
 {
+    private readonly IRedisCacheService _redisCacheService;
+    private readonly NGMDbContext _ngmDbContext;
+    private readonly IPasswordHasher _passwordHasher;
+    
+    public AuthRepository(IRedisCacheService REDIS_CACHE_SERVICE, NGMDbContext NGM_DB_CONTEXT, IPasswordHasher PASSWORD_HASHER)
+    {
+        _redisCacheService = REDIS_CACHE_SERVICE;
+        _ngmDbContext = NGM_DB_CONTEXT;
+        _passwordHasher = PASSWORD_HASHER;
+    }
+
     private bool IsUserExists(string USERNAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM users WHERE USERNAME = @Email";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@Email", USERNAME);
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return true;
-                    return false;
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"user_{USERNAME}"))
+            return true;
+        
+        if (_ngmDbContext.users.Any(x => x.USERNAME == USERNAME))
+            return true;
+        return false;
     }
     
     public void Register(User user)
@@ -40,136 +44,45 @@ public class AuthRepository : IAuthRepository
             throw new NGMServiceExeption(new UnauthorizedObjectResult("USERNAME занят"));
         }
 
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "INSERT INTO users (USERNAME, PASSWORD, EMAIL, DISPLAYNAME, DESCRIPTION) VALUES (@USERNAME, @PASSWORD, @EMAIL, @DISPLAYNAME, @DESCRIPTION)";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@USERNAME", user.USERNAME);
-                insertCommand.Parameters.AddWithValue("@PASSWORD", user.PASSWORD);
-                insertCommand.Parameters.AddWithValue("@EMAIL", user.EMAIL);
-                insertCommand.Parameters.AddWithValue("@DISPLAYNAME", user.DISPLAYNAME);
-                insertCommand.Parameters.AddWithValue("@DESCRIPTION", user.DESCRIPTION);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Пользователь создан"));
-                }
-                throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-            }
-        }
+        _ngmDbContext.users.Add(user);
+        _ngmDbContext.SaveChanges();
+        _redisCacheService.Set($"user_{user.USERNAME}", user);
     }
 
     public User GetUser(string USERNAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM users WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new User
-                        {
-                            ID = int.Parse(reader["ID"].ToString()!),
-                            EMAIL = reader["EMAIL"].ToString()!,
-                            USERNAME = reader["USERNAME"].ToString()!,
-                            DISPLAYNAME = reader["DISPLAYNAME"].ToString()!,
-                            DESCRIPTION = reader["DESCRIPTION"].ToString()!,
-                        };
-                    }
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"user_{USERNAME}"))
+            return _redisCacheService.Get<User>($"user_{USERNAME}");
+        
+        if (_ngmDbContext.users.Any(x => x.USERNAME == USERNAME))
+            return _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        
         throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
     }
     public User GetUserWithPassword(string USERNAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM users WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new User
-                        {
-                            ID = int.Parse(reader["ID"].ToString()!),
-                            EMAIL = reader["EMAIL"].ToString()!,
-                            USERNAME = reader["USERNAME"].ToString()!,
-                            DISPLAYNAME = reader["DISPLAYNAME"].ToString()!,
-                            DESCRIPTION = reader["DESCRIPTION"].ToString()!,
-                            PASSWORD =  reader["PASSWORD"].ToString()!,
-                        };
-                    }
-                }
-            }
-        }
+        if (_redisCacheService.Exists($"user_{USERNAME}"))
+            return _redisCacheService.Get<User>($"user_{USERNAME}");
+        
+        if (_ngmDbContext.users.Any(x => x.USERNAME == USERNAME))
+            return _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        
         throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
     }
     public User GetUser(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM users WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new User
-                        {
-                            ID = int.Parse(reader["ID"].ToString()!),
-                            EMAIL = reader["EMAIL"].ToString()!,
-                            USERNAME = reader["USERNAME"].ToString()!,
-                            DISPLAYNAME = reader["DISPLAYNAME"].ToString()!,
-                            DESCRIPTION = reader["DESCRIPTION"].ToString()!
-                        };
-                    }
-                }
-            }
-        }
+        if (_ngmDbContext.users.Any(x => x.ID == ID))
+            return _ngmDbContext.users.First(x => x.ID == ID);
+        
         throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
     }
     public void DeleteUser(string USERNAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "DELETE FROM users WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-
-                int rowsAffected = checkCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Пользователь создан"));
-                }
-                throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
-            }
-        }
+        if (_redisCacheService.Exists($"user_{USERNAME}"))
+            _redisCacheService.Remove($"user_{USERNAME}");
+        
+        _ngmDbContext.users.Remove(_ngmDbContext.users.First(x => x.USERNAME == USERNAME));
+        _ngmDbContext.SaveChanges();
     }
     public void UpdateUsername(string USERNAME, string NEWUSERNAME)
     {
@@ -178,111 +91,42 @@ public class AuthRepository : IAuthRepository
             throw new NGMServiceExeption(new BadRequestObjectResult("username занят"));
         }
         
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "UPDATE users SET USERNAME = @NEWUSERNAME WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-                checkCommand.Parameters.AddWithValue("@NEWUSERNAME", NEWUSERNAME);
-
-                int rowsAffected = checkCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Ваш username изменён"));
-                }
-                throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
-            }
-        }
+        User u = _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        u.USERNAME = NEWUSERNAME;
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Set($"user_{USERNAME}", u);
     }
     
     public void UpdatePassword(string USERNAME, string PASSWORD)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "UPDATE users SET PASSWORD = @PASSWORD WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-                checkCommand.Parameters.AddWithValue("@PASSWORD", PASSWORD);
-
-                int rowsAffected = checkCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Ваш password изменён"));
-                }
-                throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
-            }
-        }
+        User u = _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        u.PASSWORD = _passwordHasher.HashPassword(PASSWORD);
+        _ngmDbContext.SaveChanges();
     }
 
     public void UpdateEmail(string USERNAME, string EMAIL)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "UPDATE users SET EMAIL = @EMAIL WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-                checkCommand.Parameters.AddWithValue("@EMAIL", EMAIL);
-
-                int rowsAffected = checkCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Ваш email изменён"));
-                }
-                throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
-            }
-        }
+        User u = _ngmDbContext.users.First(x => x.EMAIL == EMAIL);
+        u.EMAIL = EMAIL;
+        _ngmDbContext.SaveChanges();
     }
     
     public void UpdateDisplayName(string USERNAME, string DISPLAYNAME)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "UPDATE users SET DISPLAYNAME = @DISPLAYNAME WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-                checkCommand.Parameters.AddWithValue("@DISPLAYNAME", DISPLAYNAME);
-
-                int rowsAffected = checkCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Ваш displayname изменён"));
-                }
-                throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
-            }
-        }
+        User u = _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        u.DISPLAYNAME = DISPLAYNAME;
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Set($"user_{USERNAME}", u);
     }
     
     public void UpdateDescription(string USERNAME, string DESCRIPTION)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "UPDATE users SET DESCRIPTION = @DESCRIPTION WHERE USERNAME = @USERNAME";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@USERNAME", USERNAME);
-                checkCommand.Parameters.AddWithValue("@DESCRIPTION", DESCRIPTION);
-
-                int rowsAffected = checkCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    throw new NGMServiceExeption(new OkObjectResult("Ваш description изменён"));
-                }
-                throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
-            }
-        }
+        User u = _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        u.DESCRIPTION = DESCRIPTION;
+        _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Set($"user_{USERNAME}", u);
     }
 }

@@ -5,7 +5,6 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.RateLimiting;
-using Backend.Core.Services;
 using LiveStreamingServerNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -15,12 +14,13 @@ using MySql.Data.MySqlClient;
 using Mysqlx;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.API.API_v1.MIddlewares;
-using NGM_Server_rebuild.Infrastructure.Persistence;
 using NGMapi.API.API_v1.Hubs;
 using NGMapi.Application.Interfaces;
 using NGMapi.Application.Services;
 using NGMapi.Domain.Interfaces;
+using NGMapi.Infrastructure.Persistence;
 using NGMapi.Infrastructure.Repositories;
+using NGMapi.Infrastructure.Services;
 using Prometheus;
 using StackExchange.Redis;
 
@@ -80,7 +80,8 @@ builder.Services.AddSignalR(hubOptions =>{
 });
 builder.Services.AddDbContext<NGMDbContext>(options =>
         options.UseMySql(gb.db,
-            new MySqlServerVersion(new Version(5, 7, 41))));
+            new MySqlServerVersion(new Version(5, 7, 41))),
+    ServiceLifetime.Scoped);
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp => 
     ConnectionMultiplexer.Connect(gb.rdb));
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();

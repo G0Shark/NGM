@@ -3,224 +3,79 @@ using MySql.Data.MySqlClient;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.Domain.Entities;
 using NGMapi.Domain.Interfaces;
+using NGMapi.Infrastructure.Persistence;
+using NGMapi.Infrastructure.Services;
 
 namespace NGMapi.Infrastructure.Repositories;
 
 public class FriendshipRepository : IFriendshipRepository
 {
+    private readonly IRedisCacheService _redisCacheService;
+    private readonly NGMDbContext _ngmDbContext;
+
+    public FriendshipRepository(IRedisCacheService REDIS_CACHE_SERVICE, NGMDbContext NGM_DB_CONTEXT)
+    {
+        _redisCacheService = REDIS_CACHE_SERVICE;
+        _ngmDbContext = NGM_DB_CONTEXT;
+    }
+
     public bool IsFriendshipExists(int SENDERID, int ACCEPTERID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM friendships WHERE SENDERID = @SENDERID AND ACCEPTERID = @ACCEPTERID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
-                checkCommand.Parameters.AddWithValue("@ACCEPTERID", ACCEPTERID);
-                
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        if (_ngmDbContext.friendships.Any(x => x.SENDERID == SENDERID && x.ACCEPTERID == ACCEPTERID))
+            return true;
+        
+        return false;
     }
     
     public bool IsFriendRequest(int SENDERID, int ACCEPTERID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM friendships WHERE SENDERID = @SENDERID AND ACCEPTERID = @ACCEPTERID AND FRENDSHIPSTATE = 2";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
-                checkCommand.Parameters.AddWithValue("@ACCEPTERID", ACCEPTERID);
-                
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        if (_ngmDbContext.friendships.Any(x => x.SENDERID == SENDERID && x.ACCEPTERID == ACCEPTERID && x.STATE == 2))
+            return true;
+        
+        return false;
     }
     
     public bool IsFriend(int SENDERID, int ACCEPTERID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM friendships WHERE SENDERID = @SENDERID AND ACCEPTERID = @ACCEPTERID AND FRENDSHIPSTATE = 3";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
-                checkCommand.Parameters.AddWithValue("@ACCEPTERID", ACCEPTERID);
-                
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        if (_ngmDbContext.friendships.Any(x => x.SENDERID == SENDERID && x.ACCEPTERID == ACCEPTERID && x.STATE == 3))
+            return true;
+        
+        return false;
     }
     
     public bool IsBlocked(int SENDERID, int ACCEPTERID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM friendships WHERE SENDERID = @SENDERID AND ACCEPTERID = @ACCEPTERID AND FRENDSHIPSTATE = 4";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
-                checkCommand.Parameters.AddWithValue("@ACCEPTERID", ACCEPTERID);
-                
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
+        if (_ngmDbContext.friendships.Any(x => x.SENDERID == SENDERID && x.ACCEPTERID == ACCEPTERID && x.STATE == 4))
+            return true;
+        
+        return false;
     }
     
     public void SetFriendshipState(int SENDERID, int ACCEPTERID, int STATE)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "UPDATE friendships SET FRENDSHIPSTATE=@STATE WHERE SENDERID=@SENDERID AND ACCEPTERID=@ACCEPTERID";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@STATE", STATE);
-                insertCommand.Parameters.AddWithValue("@SENDERID", SENDERID);
-                insertCommand.Parameters.AddWithValue("@ACCEPTERID", ACCEPTERID);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        Friendship f = _ngmDbContext.friendships.First(x => x.SENDERID == SENDERID && x.ACCEPTERID == ACCEPTERID);
+        f.STATE = STATE;
+        _ngmDbContext.SaveChanges();
     }
 
     public void CreateFriendship(Friendship friendship)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string insertQuery = "INSERT INTO friendships (SENDERID, ACCEPTERID, FRENDSHIPSTATE) VALUES (@SENDERID, @ACCEPTERID, @STATE)";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@SENDERID", friendship.SENDERID);
-                insertCommand.Parameters.AddWithValue("@ACCEPTERID", friendship.ACCEPTERID);
-                insertCommand.Parameters.AddWithValue("@STATE", friendship.STATE);
-
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
-        }
+        _ngmDbContext.friendships.Add(friendship);
+        _ngmDbContext.SaveChanges();
     }
     
     public void DeleteUser(int USERID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
+        Friendship[] fs = _ngmDbContext.friendships.Where(x => x.SENDERID == USERID || x.ACCEPTERID == USERID).ToArray();
+        foreach (Friendship f in fs)
         {
-            connection.Open();
-            string insertQuery = "DELETE FROM friendships WHERE SENDERID=@USERID OR ACCEPTERID=@USERID;";
-
-            using (MySqlCommand insertCommand = new MySqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@USERID", USERID);
-                
-                int rowsAffected = insertCommand.ExecuteNonQuery();
-                if (rowsAffected > 0)
-                {
-                    return;
-                }
-                else
-                {
-                    throw new NGMServiceExeption(new ConflictObjectResult("Неизвестная ошибка"));
-                }
-            }
+            _ngmDbContext.friendships.Remove(f);
         }
+        _ngmDbContext.SaveChanges();
     }
 
     public Friendship GetFriendship(int ID)
     {
-        using (MySqlConnection connection = new MySqlConnection(gb.db))
-        {
-            connection.Open();
-            string checkQuery = "SELECT * FROM friendships WHERE ID = @ID";
-
-            using (MySqlCommand checkCommand = new MySqlCommand(checkQuery, connection))
-            {
-                checkCommand.Parameters.AddWithValue("@ID", ID);
-
-                using (MySqlDataReader reader = checkCommand.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        return new Friendship
-                        {
-                            ID = reader.GetInt32("ID"),
-                            SENDERID = reader.GetInt32("SENDERID"),
-                            ACCEPTERID = reader.GetInt32("ACCEPTERID"),
-                            STATE = reader.GetInt32("STATE")
-                        };
-                    }
-                    else
-                    {
-                        throw new NGMServiceExeption(new NotFoundObjectResult("Сотружества не существует"));
-                    }
-                }
-            }
-        }
+        return _ngmDbContext.friendships.First(x => x.ID == ID);
     }
 }

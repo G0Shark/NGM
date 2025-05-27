@@ -5,7 +5,6 @@ namespace NGMapi.Domain.Entities;
 public class User
 {
     [Required]
-    [MaxLength(16)]
     public int ID { get; set; }
     [Required]
     [MaxLength(60)]

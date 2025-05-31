@@ -30,19 +30,10 @@ public class AuthController : ControllerBase
             return Unauthorized();
 
         DateTime time = DateTime.Now;
-        time.AddHours(8);
         if (FOR_LONG)
-            time.AddDays(29);
-
-        u.PASSWORD = "";
+            return Ok(_jwtGenerator.GenerateJwt(_jwtGenerator.GenerateIdentify(u), time.AddDays(29)));
         
-        var res = new
-        {
-            token = _jwtGenerator.GenerateJwt(_jwtGenerator.GenerateIdentify(u), time),
-            user = u
-        };
-        
-        return Ok(res);
+        return Ok(_jwtGenerator.GenerateJwt(_jwtGenerator.GenerateIdentify(u), time.AddDays(1)));
     }
     
     [HttpPost]

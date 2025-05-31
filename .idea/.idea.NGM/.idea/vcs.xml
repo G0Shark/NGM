@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../DownloadOptimize" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../G0Exploit" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../G0Sploit" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../MafiaTG" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../NGM" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../NGMClient" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../ngm2/NGM" vcs="Git" />
   </component>
 </project>

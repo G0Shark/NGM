@@ -27,37 +27,79 @@ public class ServersRepository : IServersRepository
     }
     public bool IsVisible(int ID)
     {
-        return _ngmDbContext.servers.First(x => x.ID == ID).VISIBLE;
+        if (_redisCacheService.Exists($"server_{ID}"))
+            return _redisCacheService.Get<Server>($"server_{ID}").VISIBLE;
+
+        Server s = _ngmDbContext.servers.First(x => x.ID == ID);
+        _redisCacheService.Set($"server_{ID}", s);
+        return s.VISIBLE;
     }
     public bool IsServerExists(int ID)
     {
-        return _ngmDbContext.servers.Any(x => x.ID == ID);
+        if (_redisCacheService.Exists($"server_{ID}"))
+            return true;
+
+        if (_ngmDbContext.servers.Any(x => x.ID == ID))
+        {
+            Server s = _ngmDbContext.servers.First(x => x.ID == ID);
+            _redisCacheService.Set($"server_{ID}", s);
+            return true;
+        }
+        
+        return false;
     }
     
     public bool IsServerExists(string NAME)
     {
-        return _ngmDbContext.servers.Any(x => x.NAME == NAME);
+        if (_ngmDbContext.servers.Any(x => x.NAME == NAME))
+        {
+            Server s = _ngmDbContext.servers.First(x => x.NAME == NAME);
+            _redisCacheService.Set($"server_{s.ID}", s);
+            return true;
+        }
+        return false;
     }
     
     public Server GetServer(string NAME)
     {
-        return _ngmDbContext.servers.First(x => x.NAME == NAME);
+        if (_ngmDbContext.servers.Any(x => x.NAME == NAME))
+        {
+            Server s = _ngmDbContext.servers.First(x => x.NAME == NAME);
+            _redisCacheService.Set($"server_{s.ID}", s);
+            return s;
+        }
+        
+        throw new NGMServiceExeption(new NotFoundObjectResult("Сервера не найдено"));
     }
     
     public Server GetServer(int SERVERID)
     {
         if (_redisCacheService.Exists($"server_{SERVERID}"))
             return _redisCacheService.Get<Server>($"server_{SERVERID}");
-        
+
         if (_ngmDbContext.servers.Any(x => x.ID == SERVERID))
-            return _ngmDbContext.servers.First(x => x.ID == SERVERID);
+        {
+            Server s = _ngmDbContext.servers.First(x => x.ID == SERVERID);
+            _redisCacheService.Set($"server_{SERVERID}", s);
+            return s;
+        }
 
         throw new NGMServiceExeption(new NotFoundObjectResult("Сервера не найдено"));
     }
     
     public bool IsOwner(int ID, int OWNERID)
     {
-        return _ngmDbContext.servers.Any(x => x.ID == ID && x.OWNERID == OWNERID);
+        if (_redisCacheService.Exists($"server_{ID}"))
+            return _redisCacheService.Get<Server>($"server_{ID}").OWNERID == OWNERID;
+
+        if (_ngmDbContext.servers.Any(x => x.ID == ID))
+        {
+            Server s = _ngmDbContext.servers.First(x => x.ID == ID);
+            _redisCacheService.Set($"server_{ID}", s);
+            return s.OWNERID == OWNERID;
+        }
+        
+        throw new NGMServiceExeption(new NotFoundObjectResult("Сервера не найдено"));
     }
     
     public void CreateServer(Server server)
@@ -120,6 +162,8 @@ public class ServersRepository : IServersRepository
     {
         _ngmDbContext.servers.Remove(_ngmDbContext.servers.First(x => x.ID == ID));
         _ngmDbContext.SaveChanges();
+        
+        _redisCacheService.Remove($"server_{ID}");
     }
 
     public Server[] GetServers()

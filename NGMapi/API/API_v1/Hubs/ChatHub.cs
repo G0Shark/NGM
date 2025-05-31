@@ -33,7 +33,7 @@ public class ChatHub : Hub
         _membersRepository = MEMBERS_REPOSITORY;
     }
 
-    public async Task Delete(string AUTH, int ID, bool DMCHAT)
+    public async Task Delete(int ID, bool DMCHAT)
     {
         if (_messagingRepository.IsMessageExists(ID))
         {
@@ -102,7 +102,7 @@ public class ChatHub : Hub
         }
     }
     
-    public async Task Update(string AUTH, int ID, string NEWMESSAGE, bool DMCHAT)
+    public async Task Update(int ID, string NEWMESSAGE, bool DMCHAT)
     {
         if (_messagingRepository.IsMessageExists(ID))
         {
@@ -249,13 +249,10 @@ public class ChatHub : Hub
         }
     }
     
-    public async Task Connect(string AUTH, int ID, bool DMCHAT)
+    public async Task Connect(int ID, bool DMCHAT)
     {
-        Console.WriteLine(AUTH);
-        
         if (_chatsRepository.GetChat(ID).TYPE != "TEXT")
         {
-            Console.WriteLine("d");
             await Clients.Caller.SendAsync("ReceiveError", new BadRequestObjectResult("Данный чат не текстовый."));
         }
             string username = Context.User.Identity.Name;
@@ -291,7 +288,6 @@ public class ChatHub : Hub
 
                     if (!containsRole)
                     {
-                        Console.WriteLine("ddd");
                         await Clients.Caller.SendAsync("ReceiveError", new UnauthorizedObjectResult("Нет права к данному чату, т.к. в нём нет вашей роли."));
                     }
                 }
@@ -301,7 +297,7 @@ public class ChatHub : Hub
             }
     }
     
-    public async Task Disconnect(string AUTH, int ID)
+    public async Task Disconnect(int ID)
     {
         if (_chatsRepository.GetChat(ID).TYPE != "TEXT")
         {

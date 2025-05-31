@@ -33,7 +33,10 @@ public class AuthRepository : IAuthRepository
             return true;
         
         if (_ngmDbContext.users.Any(x => x.USERNAME == USERNAME))
+        {
+            _redisCacheService.Set($"user_{USERNAME}", _ngmDbContext.users.First(x => x.USERNAME == USERNAME));
             return true;
+        }
         return false;
     }
     
@@ -53,9 +56,15 @@ public class AuthRepository : IAuthRepository
     {
         if (_redisCacheService.Exists($"user_{USERNAME}"))
             return _redisCacheService.Get<User>($"user_{USERNAME}");
-        
+
         if (_ngmDbContext.users.Any(x => x.USERNAME == USERNAME))
-            return _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+        {
+            User u = _ngmDbContext.users.First(x => x.USERNAME == USERNAME);
+            u.PASSWORD = "";
+            u.EMAIL = "";
+            _redisCacheService.Set($"user_{USERNAME}", u);
+            return u;
+        }
         
         throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
     }
@@ -72,7 +81,11 @@ public class AuthRepository : IAuthRepository
     public User GetUser(int ID)
     {
         if (_ngmDbContext.users.Any(x => x.ID == ID))
-            return _ngmDbContext.users.First(x => x.ID == ID);
+        {
+            User u = _ngmDbContext.users.First(x => x.ID == ID);
+            _redisCacheService.Set($"user_{u.USERNAME}", u);
+            return u;
+        }
         
         throw new NGMServiceExeption(new NotFoundObjectResult("Пользователь не найден"));
     }

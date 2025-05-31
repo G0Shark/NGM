@@ -1,17 +1,11 @@
 //Привет мир!
-using System;
 using System.Net;
-using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.RateLimiting;
 using LiveStreamingServerNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using MySql.Data.MySqlClient;
-using Mysqlx;
 using NGM_Server_rebuild;
 using NGM_Server_rebuild.API.API_v1.MIddlewares;
 using NGMapi.API.API_v1.Hubs;
@@ -23,21 +17,6 @@ using NGMapi.Infrastructure.Repositories;
 using NGMapi.Infrastructure.Services;
 using Prometheus;
 using StackExchange.Redis;
-
-//Проверка на коннект, чтобы я не подключился к несуществующей дб
-try
-{
-    //Если коннект нормальный, то всё ок.
-    var c = new MySqlConnection(gb.db);
-    c.Open();
-    c.Close();
-}
-catch (Exception ex)
-{
-    //Даже если ДБ не существует или она не запущена, это не помешает приложению
-    //После дева удалить, ошибка должна отключать сервер
-    Console.Error.WriteLine("MYSQL connection FAILURE!\nMore info below:\n"+ex.Message);
-}
 
 //Конфигуратор
 var builder = WebApplication.CreateBuilder(args);
@@ -80,10 +59,12 @@ builder.Services.AddSignalR(hubOptions =>{
 });
 builder.Services.AddDbContext<NGMDbContext>(options =>
         options.UseMySql(gb.db,
-            new MySqlServerVersion(new Version(5, 7, 41))),
+            new MySqlServerVersion(new Version(8, 0, 21))),
     ServiceLifetime.Scoped);
+var configuration = ConfigurationOptions.Parse("redis:6379");
+configuration.AbortOnConnectFail = false;
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp => 
-    ConnectionMultiplexer.Connect(gb.rdb));
+    ConnectionMultiplexer.Connect(configuration));
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IJwtGenerator, JwtGenerator>();
 builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
@@ -141,6 +122,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 //Создание приложения на основе конфигуратора
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 //После дева удалить
 if (app.Environment.IsDevelopment())

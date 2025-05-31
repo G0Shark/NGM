@@ -23,9 +23,12 @@ public class ChatsRepository : IChatsRepository
     {
         if (_redisCacheService.Exists($"chat_{ID}"))
             return true;
-        
+
         if (_ngmDbContext.chats.Any(x => x.ID == ID))
+        {
+            _redisCacheService.Set($"chat_{ID}", _ngmDbContext.chats.First(x => x.ID == ID));
             return true;
+        }
         
         return false;
     }
@@ -81,8 +84,10 @@ public class ChatsRepository : IChatsRepository
     {
         if (_redisCacheService.Exists($"chat_{ID}"))
             return _redisCacheService.Get<Chat>($"chat_{ID}").ROLEID;
-        
-        return _ngmDbContext.chats.First(x => x.ID == ID).ROLEID;
+
+        Chat c = _ngmDbContext.chats.First(x => x.ID == ID);
+        _redisCacheService.Set($"chat_{ID}", c);
+        return c.ROLEID;
     }
     
     public Chat GetChat(int ID)
@@ -90,6 +95,8 @@ public class ChatsRepository : IChatsRepository
         if (_redisCacheService.Exists($"chat_{ID}"))
             return _redisCacheService.Get<Chat>($"chat_{ID}");
         
-        return _ngmDbContext.chats.First(x => x.ID == ID);
+        Chat c = _ngmDbContext.chats.First(x => x.ID == ID);
+        _redisCacheService.Set($"chat_{ID}", c);
+        return c;
     }
 }

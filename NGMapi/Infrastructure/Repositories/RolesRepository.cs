@@ -21,7 +21,17 @@ public class RolesRepository : IRolesRepository
 
     public int GetLevelOfRole(int ID)
     {
-        return _ngmDbContext.roles.First(x => x.ID == ID).LEVEL;
+        if (_redisCacheService.Exists($"role_{ID}"))
+            return _redisCacheService.Get<Role>($"role_{ID}").LEVEL;
+
+        if (_ngmDbContext.roles.Any(x => x.ID == ID))
+        {
+            Role r = _ngmDbContext.roles.First(x => x.ID == ID);
+            _redisCacheService.Set($"role_{ID}", r);
+            return r.LEVEL;
+        }
+        
+        throw new NGMServiceExeption(new NotFoundObjectResult("Роли не найдено"));
     }
     public int UserMaxLevel(int USERID, int SERVERID)
     {
@@ -87,7 +97,17 @@ public class RolesRepository : IRolesRepository
     
     public int GetServerIDByRoleID(int ID)
     {
-        return _ngmDbContext.roles.First(x => x.ID == ID).SERVERID;
+        if (_redisCacheService.Exists($"role_{ID}"))
+            return _redisCacheService.Get<Role>($"role_{ID}").SERVERID;
+
+        if (_ngmDbContext.roles.Any(x => x.ID == ID))
+        {
+            Role r = _ngmDbContext.roles.First(x => x.ID == ID);
+            _redisCacheService.Set($"role_{ID}", r);
+            return r.SERVERID;
+        }
+        
+        throw new NGMServiceExeption(new NotFoundObjectResult("Роли не найдено"));
     }
     
     public void CreateRole(Role role)
